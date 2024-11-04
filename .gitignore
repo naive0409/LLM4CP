@@ -1,3 +1,6 @@
 
-.idea/Code.iml
-.idea/misc.xml
+/Testing Dataset
+/Training Dataset
+/__pycache__
+/.idea
+/models/__pycache__
