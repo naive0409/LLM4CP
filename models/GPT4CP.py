@@ -93,6 +93,9 @@ class Model(nn.Module):
             self.gpt2 = GPT2Model.from_pretrained('gpt2-xl', output_attentions=True, output_hidden_states=True)
             self.gpt2.h = self.gpt2.h[:gpt_layers]
             self.gpt_dim = 1600
+        elif gpt_type == 'clip':
+            # ! 替换clip
+            pass
         else:
             self.gpt2 = GPT2Model.from_pretrained('gpt2', output_attentions=True, output_hidden_states=True)
             self.gpt2.h = self.gpt2.h[:gpt_layers]
