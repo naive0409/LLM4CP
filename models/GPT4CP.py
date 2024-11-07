@@ -54,7 +54,7 @@ class Res_block(nn.Module):
 class Model(nn.Module):
     model_list = ["gpt2", "clip"]
 
-    def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,
+    def __init__(self, gpt_type=model_list[1], d_ff=768, d_model=768, gpt_layers=6,
                  pred_len=4, prev_len=16, use_gpu=1, gpu_id=0, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=4, stride=1, res_dim=64,
@@ -114,6 +114,8 @@ class Model(nn.Module):
             att:false
             
         clip:
+            logit_scale:true
+            
             text_model.embeddings.token_embedding:false
             text_model.embeddings.position_embedding:true
             
@@ -156,6 +158,8 @@ class Model(nn.Module):
                     param.requires_grad = True
                 elif 'visual_projection' in name or 'text_projection' in name:
                     param.requires_grad = True
+                elif 'logit_scale' in name:
+                    param.requires_grad = True
                 else:
                     param.requires_grad = False
         else:
@@ -163,7 +167,7 @@ class Model(nn.Module):
 
         with open(f'./code_testing/{gpt_type}_structure.csv', 'w') as file:
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
-                        file.write(';'.join(str(x) for x in [i, param.requires_grad, list(param.data.shape), name]) + '\n')
+                file.write(';'.join(str(x) for x in [i, param.requires_grad, list(param.data.shape), name]) + '\n')
 
         if use_gpu:
             device = torch.device('cuda:{}'.format(gpu_id))
@@ -189,31 +193,32 @@ class Model(nn.Module):
         mean = torch.mean(x_enc)
         std = torch.std(x_enc)
         x_enc = (x_enc - mean) / std
-        B, L, enc_in = x_enc.shape  # [B, L, D]
+        B, L, enc_in = x_enc.shape  # [B, L, D] = 1024, 96, 16. x_enc:torch.Size([1024, 16, 96])
         # process in delay domain
-        x_enc_r = rearrange(x_enc, 'b l (k o) -> b l k o', o=2)
-        x_enc_complex = torch.complex(x_enc_r[:, :, :, 0], x_enc_r[:, :, :, 1])
-        x_enc_delay = torch.fft.ifft(x_enc_complex, dim=2)
-        x_enc_delay = torch.cat([torch.real(x_enc_delay), torch.imag(x_enc_delay)], dim=2)
-        x_enc_delay = x_enc_delay.reshape(B, L // self.patch_size, self.patch_size, enc_in)
-        x_enc_delay = self.patch_layer(x_enc_delay.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
-        x_enc_delay = x_enc_delay.reshape(B, L, enc_in)
-        x_enc_delay = rearrange(x_enc_delay, 'b l (k o) -> b o l k', o=2)
-        x_enc_delay = self.RB_f(x_enc_delay)
+        x_enc_r = rearrange(x_enc, 'b l (k o) -> b l k o', o=2)  # torch.Size([1024, 16, 48, 2])
+        x_enc_complex = torch.complex(x_enc_r[:, :, :, 0], x_enc_r[:, :, :, 1])  # torch.Size([1024, 16, 48])
+        x_enc_delay = torch.fft.ifft(x_enc_complex, dim=2)  # torch.Size([1024, 16, 48])
+        x_enc_delay = torch.cat([torch.real(x_enc_delay), torch.imag(x_enc_delay)], dim=2)  # torch.Size([1024, 16, 96])
+        x_enc_delay = x_enc_delay.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
+        x_enc_delay = self.patch_layer(x_enc_delay.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)  # torch.Size([1024, 4, 4, 96])
+        x_enc_delay = x_enc_delay.reshape(B, L, enc_in)  # torch.Size([1024, 16, 96])
+        x_enc_delay = rearrange(x_enc_delay, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
+        x_enc_delay = self.RB_f(x_enc_delay)  # torch.Size([1024, 2, 16, 48])
         # process in frequency domain
-        x_enc_fre = x_enc.reshape(B, L // self.patch_size, self.patch_size, enc_in)
-        x_enc_fre = self.patch_layer(x_enc_fre.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
-        x_enc_fre = x_enc_fre.reshape(B, L, enc_in)
-        x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)
-        x_enc_fre = self.RB_e(x_enc_fre)
+        x_enc_fre = x_enc.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
+        x_enc_fre = self.patch_layer(x_enc_fre.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)  # torch.Size([1024, 4, 4, 96])
+        x_enc_fre = x_enc_fre.reshape(B, L, enc_in)  # torch.Size([1024, 16, 96])
+        x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
+        x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
 
-        x_enc = x_enc_fre + x_enc_delay
-        x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D]
+        x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
+        x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
 
-        enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768]
+        enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768] torch.Size([1024, 16, 768])
 
-        enc_out = self.predict_linear_pre(enc_out.permute(0, 2, 1)).permute(0, 2, 1)
-        enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))
+        enc_out = self.predict_linear_pre(enc_out.permute(0, 2, 1)).permute(0, 2, 1)  # torch.Size([1024, 16, 768])
+        enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))  # enc_out.shape[-1]=768
+        # 'Model' object has no attribute 'gpt_dim'
 
         dec_out = self.gpt2(inputs_embeds=enc_out).last_hidden_state  # [B, L, 768]
         dec_out = dec_out[:, :, :self.d_ff]

@@ -1,4 +1,4 @@
-0;False;[];logit_scale
+0;True;[];logit_scale
 1;False;[49408, 512];text_model.embeddings.token_embedding.weight
 2;True;[77, 512];text_model.embeddings.position_embedding.weight
 3;False;[512, 512];text_model.encoder.layers.0.self_attn.k_proj.weight

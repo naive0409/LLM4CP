@@ -12,6 +12,7 @@ import numpy as np
 import shutil
 from torch.utils.tensorboard import SummaryWriter
 from metrics import NMSELoss, SE_Loss
+import pickle
 
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
@@ -25,10 +26,18 @@ save_path = "Weights/U2U_LLM4CP.pth"
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
 train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
+
 # train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=0, is_few=1)  # creat data for training
 # validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=0)  # creat data for validation
+# with open("./code_testing/dataset.pickle", "wb") as f:
+#     pickle.dump(train_set, f)
+#     pickle.dump(validate_set, f)
 
-model = Model(gpu_id=0, use_gpu=0,
+with open("./code_testing/dataset.pickle", "rb") as f:
+    train_set = pickle.load(f)
+    validate_set = pickle.load(f)
+
+model = Model(gpu_id=0, use_gpu=1,
               pred_len=4, prev_len=16,
               UQh=1, UQv=1, BQh=1, BQv=1).to(device)
 if os.path.exists(save_path):
