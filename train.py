@@ -17,17 +17,18 @@ from metrics import NMSELoss, SE_Loss
 lr = 0.0001
 epochs = 500
 batch_size = 1024
-device = torch.device('cuda')
+# device = torch.device('cuda')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
 save_path = "Weights/U2U_LLM4CP.pth"
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
 train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
-train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=0, is_few=1)  # creat data for training
-validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=0)  # creat data for validation
+# train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=0, is_few=1)  # creat data for training
+# validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=0)  # creat data for validation
 
-model = Model(gpu_id=0,
+model = Model(gpu_id=0, use_gpu=0,
               pred_len=4, prev_len=16,
               UQh=1, UQv=1, BQh=1, BQv=1).to(device)
 if os.path.exists(save_path):

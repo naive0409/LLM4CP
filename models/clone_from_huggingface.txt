@@ -1,0 +1,2 @@
+https://huggingface.co/openai-community/gpt2/tree/main
+https://huggingface.co/openai/clip-vit-base-patch32/tree/main

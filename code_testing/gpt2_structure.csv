@@ -1,0 +1,76 @@
+0;False;[50257, 768];wte.weight
+1;True;[1024, 768];wpe.weight
+2;True;[768];h.0.ln_1.weight
+3;True;[768];h.0.ln_1.bias
+4;False;[768, 2304];h.0.attn.c_attn.weight
+5;False;[2304];h.0.attn.c_attn.bias
+6;False;[768, 768];h.0.attn.c_proj.weight
+7;False;[768];h.0.attn.c_proj.bias
+8;True;[768];h.0.ln_2.weight
+9;True;[768];h.0.ln_2.bias
+10;False;[768, 3072];h.0.mlp.c_fc.weight
+11;False;[3072];h.0.mlp.c_fc.bias
+12;False;[3072, 768];h.0.mlp.c_proj.weight
+13;False;[768];h.0.mlp.c_proj.bias
+14;True;[768];h.1.ln_1.weight
+15;True;[768];h.1.ln_1.bias
+16;False;[768, 2304];h.1.attn.c_attn.weight
+17;False;[2304];h.1.attn.c_attn.bias
+18;False;[768, 768];h.1.attn.c_proj.weight
+19;False;[768];h.1.attn.c_proj.bias
+20;True;[768];h.1.ln_2.weight
+21;True;[768];h.1.ln_2.bias
+22;False;[768, 3072];h.1.mlp.c_fc.weight
+23;False;[3072];h.1.mlp.c_fc.bias
+24;False;[3072, 768];h.1.mlp.c_proj.weight
+25;False;[768];h.1.mlp.c_proj.bias
+26;True;[768];h.2.ln_1.weight
+27;True;[768];h.2.ln_1.bias
+28;False;[768, 2304];h.2.attn.c_attn.weight
+29;False;[2304];h.2.attn.c_attn.bias
+30;False;[768, 768];h.2.attn.c_proj.weight
+31;False;[768];h.2.attn.c_proj.bias
+32;True;[768];h.2.ln_2.weight
+33;True;[768];h.2.ln_2.bias
+34;False;[768, 3072];h.2.mlp.c_fc.weight
+35;False;[3072];h.2.mlp.c_fc.bias
+36;False;[3072, 768];h.2.mlp.c_proj.weight
+37;False;[768];h.2.mlp.c_proj.bias
+38;True;[768];h.3.ln_1.weight
+39;True;[768];h.3.ln_1.bias
+40;False;[768, 2304];h.3.attn.c_attn.weight
+41;False;[2304];h.3.attn.c_attn.bias
+42;False;[768, 768];h.3.attn.c_proj.weight
+43;False;[768];h.3.attn.c_proj.bias
+44;True;[768];h.3.ln_2.weight
+45;True;[768];h.3.ln_2.bias
+46;False;[768, 3072];h.3.mlp.c_fc.weight
+47;False;[3072];h.3.mlp.c_fc.bias
+48;False;[3072, 768];h.3.mlp.c_proj.weight
+49;False;[768];h.3.mlp.c_proj.bias
+50;True;[768];h.4.ln_1.weight
+51;True;[768];h.4.ln_1.bias
+52;False;[768, 2304];h.4.attn.c_attn.weight
+53;False;[2304];h.4.attn.c_attn.bias
+54;False;[768, 768];h.4.attn.c_proj.weight
+55;False;[768];h.4.attn.c_proj.bias
+56;True;[768];h.4.ln_2.weight
+57;True;[768];h.4.ln_2.bias
+58;False;[768, 3072];h.4.mlp.c_fc.weight
+59;False;[3072];h.4.mlp.c_fc.bias
+60;False;[3072, 768];h.4.mlp.c_proj.weight
+61;False;[768];h.4.mlp.c_proj.bias
+62;True;[768];h.5.ln_1.weight
+63;True;[768];h.5.ln_1.bias
+64;False;[768, 2304];h.5.attn.c_attn.weight
+65;False;[2304];h.5.attn.c_attn.bias
+66;False;[768, 768];h.5.attn.c_proj.weight
+67;False;[768];h.5.attn.c_proj.bias
+68;True;[768];h.5.ln_2.weight
+69;True;[768];h.5.ln_2.bias
+70;False;[768, 3072];h.5.mlp.c_fc.weight
+71;False;[3072];h.5.mlp.c_fc.bias
+72;False;[3072, 768];h.5.mlp.c_proj.weight
+73;False;[768];h.5.mlp.c_proj.bias
+74;True;[768];ln_f.weight
+75;True;[768];ln_f.bias

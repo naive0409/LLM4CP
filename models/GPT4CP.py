@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch import optim
 from transformers import GPT2ForSequenceClassification
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model
+from transformers import CLIPProcessor, CLIPModel
 from einops import rearrange
 from Embed import DataEmbedding
 
@@ -51,8 +52,9 @@ class Res_block(nn.Module):
 
 
 class Model(nn.Module):
+    model_list = ["gpt2", "clip"]
 
-    def __init__(self, gpt_type='gpt2', d_ff=768, d_model=768, gpt_layers=6,
+    def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,
                  pred_len=4, prev_len=16, use_gpu=1, gpu_id=0, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=4, stride=1, res_dim=64,
@@ -95,19 +97,73 @@ class Model(nn.Module):
             self.gpt_dim = 1600
         elif gpt_type == 'clip':
             # ! 替换clip
-            pass
+            self.gpt2 = CLIPModel.from_pretrained("./models/openai-clip-vit-base-patch32")
+            # self.clip_processor = CLIPProcessor.from_pretrained("./models/openai-clip-vit-base-patch32")
+            # pass
         else:
-            self.gpt2 = GPT2Model.from_pretrained('gpt2', output_attentions=True, output_hidden_states=True)
+            self.gpt2 = GPT2Model.from_pretrained('./models/gpt2', output_attentions=True, output_hidden_states=True)
             self.gpt2.h = self.gpt2.h[:gpt_layers]
             self.gpt_dim = 768
 
-        for i, (name, param) in enumerate(self.gpt2.named_parameters()):
-            if 'ln' in name or 'wpe' in name:  # or 'mlp' in name:
-                param.requires_grad = True
-            elif 'mlp' in name and mlp == 1:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
+        '''param.requires_grad: true-no frozen, false-frozen
+        gpt2:
+            wte:False,word token embedding词向量编码
+            wpe:true,position embedding, token的位置编码
+            ln:true,layer norm
+            mlp:false
+            att:false
+            
+        clip:
+            text_model.embeddings.token_embedding:false
+            text_model.embeddings.position_embedding:true
+            
+            text_model.final_layer_norm.weight:true
+            
+            vision_model.embeddings.patch_embedding:false
+            vision_model.embeddings.position_embedding:true
+            vision_model.embeddings.class_embedding(198):true
+            
+            vision_model.pre_layrnorm:true
+            vision_model.post_layernorm(395):true
+            
+            visual_projection(-2):true
+            text_projection:true
+            
+            layer-norm:true
+            mlp:false
+            self_attn:false
+        '''
+
+        if gpt_type == 'gpt2':
+            print('Model:gpt2')
+            for i, (name, param) in enumerate(self.gpt2.named_parameters()):
+                if 'ln' in name or 'wpe' in name:  # or 'mlp' in name:
+                    param.requires_grad = True
+                elif 'mlp' in name and mlp == 1:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif gpt_type == 'clip':
+            print('Model:clip')
+            for i, (name, param) in enumerate(self.gpt2.named_parameters()):
+                if 'layer-norm' in name or 'layernorm' in name or 'layer_norm' in name:
+                    param.requires_grad = True
+                elif 'mlp' in name and mlp == 1:
+                    param.requires_grad = True
+                elif 'position_embedding' in name:
+                    param.requires_grad = True
+                elif 'class_embedding' in name:
+                    param.requires_grad = True
+                elif 'visual_projection' in name or 'text_projection' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise ValueError(f'gpt_type {gpt_type} not supported')
+
+        with open(f'./code_testing/{gpt_type}_structure.csv', 'w') as file:
+            for i, (name, param) in enumerate(self.gpt2.named_parameters()):
+                        file.write(';'.join(str(x) for x in [i, param.requires_grad, list(param.data.shape), name]) + '\n')
 
         if use_gpu:
             device = torch.device('cuda:{}'.format(gpu_id))
