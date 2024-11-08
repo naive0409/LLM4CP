@@ -54,7 +54,8 @@ class Res_block(nn.Module):
 class Model(nn.Module):
     model_list = ["gpt2", "clip"]
 
-    def __init__(self, gpt_type=model_list[1], d_ff=768, d_model=768, gpt_layers=6,
+    def __init__(self, gpt_type=model_list[1], d_ff=512, d_model=512, gpt_layers=6,  # clip
+    # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
                  pred_len=4, prev_len=16, use_gpu=1, gpu_id=0, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=4, stride=1, res_dim=64,
@@ -96,8 +97,11 @@ class Model(nn.Module):
             self.gpt2.h = self.gpt2.h[:gpt_layers]
             self.gpt_dim = 1600
         elif gpt_type == 'clip':
-            # ! 替换clip
+            # todo:替换clip
+            #  重载CLIPTextTransformer & CLIPVisionTransformer
+            #  hidden_states不用self.embeddings生成
             self.gpt2 = CLIPModel.from_pretrained("./models/openai-clip-vit-base-patch32")
+            self.gpt_dim = 512
             # self.clip_processor = CLIPProcessor.from_pretrained("./models/openai-clip-vit-base-patch32")
             # pass
         else:
@@ -193,7 +197,7 @@ class Model(nn.Module):
         mean = torch.mean(x_enc)
         std = torch.std(x_enc)
         x_enc = (x_enc - mean) / std
-        B, L, enc_in = x_enc.shape  # [B, L, D] = 1024, 96, 16. x_enc:torch.Size([1024, 16, 96])
+        B, L, enc_in = x_enc.shape  # [B, L, D]  x_enc:torch.Size([1024, 16, 96])
         # process in delay domain
         x_enc_r = rearrange(x_enc, 'b l (k o) -> b l k o', o=2)  # torch.Size([1024, 16, 48, 2])
         x_enc_complex = torch.complex(x_enc_r[:, :, :, 0], x_enc_r[:, :, :, 1])  # torch.Size([1024, 16, 48])
