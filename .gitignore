@@ -7,3 +7,4 @@
 /models/openai-clip-vit-base-patch32
 /models/gpt2
 *.pickle
+*.pyc
