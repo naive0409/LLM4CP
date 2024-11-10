@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 import math
 
+from typing import List
+
 
 class PositionalEmbedding(nn.Module):
     def __init__(self, d_model, max_len=5000):
@@ -188,3 +190,38 @@ class DataEmbedding_wo_time(nn.Module):
     def forward(self, x):
         x = self.value_embedding(x) + self.position_embedding(x)
         return self.dropout(x)
+
+
+class VisionEmbedding(nn.Module):
+    def __init__(self, image_size: List[int], patch_size: int):
+        super().__init__()
+        # self.config = config
+        self.embed_dim = 768
+        self.image_size = image_size
+        self.patch_size = patch_size
+
+        self.class_embedding = nn.Parameter(torch.randn(self.embed_dim))
+
+        self.patch_embedding = nn.Conv2d(
+            in_channels=1,
+            out_channels=self.embed_dim,
+            kernel_size=self.patch_size,
+            stride=self.patch_size,
+            bias=False,
+        )
+        self.num_patches = (self.image_size[0] * self.image_size[1]) // (self.patch_size ** 2)
+        self.num_positions = self.num_patches + 1
+        self.position_embedding = nn.Embedding(self.num_positions, self.embed_dim)
+        self.register_buffer("position_ids", torch.arange(self.num_positions).expand((1, -1)), persistent=False)
+
+    def forward(self, pixel_values: torch.FloatTensor) -> torch.Tensor:
+        batch_size = pixel_values.shape[0]
+        target_dtype = self.patch_embedding.weight.dtype
+        patch_embeds = self.patch_embedding(pixel_values.to(dtype=target_dtype))
+        patch_embeds = patch_embeds.flatten(2).transpose(1, 2)
+
+        class_embeds = self.class_embedding.expand(batch_size, 1, -1)
+        embeddings = torch.cat([class_embeds, patch_embeds], dim=1)
+        pos_embeddings = self.position_embedding(self.position_ids)
+        embeddings = embeddings + pos_embeddings
+        return embeddings

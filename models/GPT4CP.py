@@ -7,9 +7,9 @@ import torch.nn.functional as F
 from torch import optim
 from transformers import GPT2ForSequenceClassification
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model
-from transformers import CLIPProcessor, CLIPModel
+from transformers import CLIPProcessor, CLIPModel, CLIPConfig, CLIPVisionConfig, CLIPTextConfig
 from einops import rearrange
-from Embed import DataEmbedding
+from Embed import DataEmbedding, VisionEmbedding
 
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
@@ -54,7 +54,7 @@ class Res_block(nn.Module):
 class Model(nn.Module):
     model_list = ["gpt2", "clip"]
 
-    def __init__(self, gpt_type=model_list[1], d_ff=512, d_model=512, gpt_layers=6,  # clip
+    def __init__(self, gpt_type=model_list[1], d_ff=512, d_model=768, gpt_layers=6,  # clip
     # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
                  pred_len=4, prev_len=16, use_gpu=1, gpu_id=0, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
@@ -82,7 +82,8 @@ class Model(nn.Module):
         self.enc_in = K * UQh * UQv * BQh * BQv
         self.c_out = K * UQh * UQv * BQh * BQv
 
-        self.enc_embedding1 = DataEmbedding(2 * self.enc_in, self.d_model, embed, freq, dropout)
+        self.enc_embedding1 = DataEmbedding(2 * self.enc_in, 512, embed, freq, dropout)
+        self.enc_embedding2 = VisionEmbedding(image_size=[self.prev_len, 2 * self.enc_in], patch_size=self.patch_size)
 
         if gpt_type == 'gpt2-medium':
             self.gpt2 = GPT2Model.from_pretrained('gpt2-medium', output_attentions=True, output_hidden_states=True)
@@ -100,10 +101,16 @@ class Model(nn.Module):
             # todo:替换clip
             #  重载CLIPTextTransformer & CLIPVisionTransformer
             #  hidden_states不用self.embeddings生成
+            # vision_config = CLIPVisionConfig(num_channels=1)
+            # text_config = CLIPTextConfig()
+            # clip_config = CLIPConfig().from_text_vision_configs(text_config, vision_config)
             self.gpt2 = CLIPModel.from_pretrained("./models/openai-clip-vit-base-patch32")
-            self.gpt_dim = 512
+                                                  # config=clip_config,
+                                                  # ignore_mismatched_sizes=True
+                                                  # )
+            # self.gpt_dim = 512
+            # self.clipVisionModel = CLIPVisionModel.from_pretrained("./models/openai-clip-vit-base-patch32")
             # self.clip_processor = CLIPProcessor.from_pretrained("./models/openai-clip-vit-base-patch32")
-            # pass
         else:
             self.gpt2 = GPT2Model.from_pretrained('./models/gpt2', output_attentions=True, output_hidden_states=True)
             self.gpt2.h = self.gpt2.h[:gpt_layers]
@@ -169,7 +176,7 @@ class Model(nn.Module):
         else:
             raise ValueError(f'gpt_type {gpt_type} not supported')
 
-        with open(f'./code_testing/{gpt_type}_structure.csv', 'w') as file:
+        with open(f'./code_testing/structure_{gpt_type}.csv', 'w') as file:
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
                 file.write(';'.join(str(x) for x in [i, param.requires_grad, list(param.data.shape), name]) + '\n')
 
@@ -215,16 +222,20 @@ class Model(nn.Module):
         x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
         x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
 
-        x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
-        x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
+        # todo:在经过clip后,embedded相加
+        # x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
+        # x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
+        #
+        # enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768] torch.Size([1024, 16, 768])
 
-        enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768] torch.Size([1024, 16, 768])
+        # vision emb
+        x_enc_delay = rearrange(x_enc_delay, 'b o l k -> b 1 l (k o)', o=2)  # torch.Size([1024, 16, 96])
+        x_enc_delay = self.enc_embedding2(x_enc_delay)
+        # text emb
+        x_enc_fre = rearrange(x_enc_fre, 'b o l k -> b l (k o)', o=2)  # torch.Size([1024, 16, 96])
+        x_enc_fre = self.enc_embedding1(x_enc_fre, x_mark_enc)  # torch.Size([1024, 16, 512])
 
-        enc_out = self.predict_linear_pre(enc_out.permute(0, 2, 1)).permute(0, 2, 1)  # torch.Size([1024, 16, 768])
-        enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))  # enc_out.shape[-1]=768
-        # 'Model' object has no attribute 'gpt_dim'
-
-        dec_out = self.gpt2(inputs_embeds=enc_out).last_hidden_state  # [B, L, 768]
+        dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay)#.last_hidden_state  # [B, L, 768]
         dec_out = dec_out[:, :, :self.d_ff]
 
         dec_out = self.out_layer_dim(dec_out)
