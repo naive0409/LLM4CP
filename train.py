@@ -37,8 +37,7 @@ with open("./code_testing/dataset.pickle", "rb") as f:
     train_set = pickle.load(f)
     validate_set = pickle.load(f)
 
-model = Model(gpu_id=0, use_gpu=1,
-              pred_len=4, prev_len=16,
+model = Model(pred_len=4, prev_len=16,
               UQh=1, UQv=1, BQh=1, BQv=1).to(device)
 if os.path.exists(save_path):
     model = torch.load(save_path, map_location=device)

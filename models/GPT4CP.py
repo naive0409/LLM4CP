@@ -56,12 +56,12 @@ class Model(nn.Module):
 
     def __init__(self, gpt_type=model_list[1], d_ff=512, d_model=768, gpt_layers=6,  # clip
     # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
-                 pred_len=4, prev_len=16, use_gpu=1, gpu_id=0, mlp=0, res_layers=4,
+                 pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=8, stride=1, res_dim=64,
                  embed='timeF', freq='h', dropout=0.1):
         super(Model, self).__init__()
-        self.device = torch.device('cuda:{}'.format(gpu_id))
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.mlp = mlp
         self.res_layers = res_layers
         self.pred_len = pred_len
@@ -180,9 +180,9 @@ class Model(nn.Module):
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
                 file.write(';'.join(str(x) for x in [i, param.requires_grad, list(param.data.shape), name]) + '\n')
 
-        if use_gpu:
-            device = torch.device('cuda:{}'.format(gpu_id))
-            self.gpt2.to(device=device)
+        # if use_gpu:
+        #     device = torch.device('cuda:{}'.format(gpu_id))
+        #     self.gpt2.to(device=device)
 
         self.patch_layer = nn.Linear(self.patch_size, self.patch_size)
         self.patch_layer_fre = nn.Linear(self.patch_size, self.patch_size)
@@ -252,7 +252,8 @@ class Model(nn.Module):
 if __name__ == '__main__':
     import torch
 
-    device = torch.device('cuda')
+    # device = torch.device('cuda')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Model(UQh=1, UQv=1, BQh=1, BQv=1).to(device)
     inputs = torch.rand(3, 16, 96).to(device)
     out = model(inputs, None, None, None)
