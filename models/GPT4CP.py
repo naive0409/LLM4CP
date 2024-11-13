@@ -58,7 +58,7 @@ class Model(nn.Module):
     # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
                  pred_len=4, prev_len=16, use_gpu=1, gpu_id=0, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
-                 patch_size=4, stride=1, res_dim=64,
+                 patch_size=8, stride=1, res_dim=64,
                  embed='timeF', freq='h', dropout=0.1):
         super(Model, self).__init__()
         self.device = torch.device('cuda:{}'.format(gpu_id))
@@ -187,6 +187,8 @@ class Model(nn.Module):
         self.patch_layer = nn.Linear(self.patch_size, self.patch_size)
         self.patch_layer_fre = nn.Linear(self.patch_size, self.patch_size)
         self.predict_linear_pre = nn.Linear(self.prev_len, self.prev_len)
+        self.predict_linear_vision_pre = nn.Linear(1 + int(2 * self.enc_in * self.prev_len // (self.patch_size ** 2)),
+                                                   1 + int(2 * self.enc_in * self.prev_len // (self.patch_size ** 2)))
         self.out_layer_dim = nn.Linear(d_ff, self.c_out * 2)
         self.output_layer_time = nn.Sequential(
             nn.Linear(self.prev_len, self.pred_len)
@@ -231,9 +233,11 @@ class Model(nn.Module):
         # vision emb
         x_enc_delay = rearrange(x_enc_delay, 'b o l k -> b 1 l (k o)', o=2)  # torch.Size([1024, 16, 96])
         x_enc_delay = self.enc_embedding2(x_enc_delay)
+        x_enc_delay = self.predict_linear_vision_pre(x_enc_delay.permute(0, 2, 1)).permute(0, 2, 1)
         # text emb
         x_enc_fre = rearrange(x_enc_fre, 'b o l k -> b l (k o)', o=2)  # torch.Size([1024, 16, 96])
         x_enc_fre = self.enc_embedding1(x_enc_fre, x_mark_enc)  # torch.Size([1024, 16, 512])
+        x_enc_fre = self.predict_linear_pre(x_enc_fre.permute(0, 2, 1)).permute(0, 2, 1)
 
         dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay)#.last_hidden_state  # [B, L, 768]
         dec_out = dec_out[:, :, :self.d_ff]
