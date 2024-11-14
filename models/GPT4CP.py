@@ -98,9 +98,8 @@ class Model(nn.Module):
             self.gpt2.h = self.gpt2.h[:gpt_layers]
             self.gpt_dim = 1600
         elif gpt_type == 'clip':
-            # todo:替换clip
-            #  重载CLIPTextTransformer & CLIPVisionTransformer
-            #  hidden_states不用self.embeddings生成
+            # done clip替换gpt2
+            # done noTokenizer : hidden_states不用clip embeddings生成
             # vision_config = CLIPVisionConfig(num_channels=1)
             # text_config = CLIPTextConfig()
             # clip_config = CLIPConfig().from_text_vision_configs(text_config, vision_config)
@@ -224,7 +223,6 @@ class Model(nn.Module):
         x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
         x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
 
-        # todo:在经过clip后,embedded相加
         # x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
         # x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
         #
@@ -240,6 +238,7 @@ class Model(nn.Module):
         x_enc_fre = self.predict_linear_pre(x_enc_fre.permute(0, 2, 1)).permute(0, 2, 1)
 
         dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay)#.last_hidden_state  # [B, L, 768]
+        # todo clip输出处理
         dec_out = dec_out[:, :, :self.d_ff]
 
         dec_out = self.out_layer_dim(dec_out)
