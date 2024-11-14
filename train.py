@@ -17,7 +17,7 @@ import pickle
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 1024
+batch_size = 8 #1024
 # device = torch.device('cuda')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
