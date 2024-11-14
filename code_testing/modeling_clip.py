@@ -685,11 +685,15 @@ class CLIPTextTransformer(nn.Module):
         if input_ids is None:
             raise ValueError("You have to specify input_ids")
 
+        '''no tokenizer'''
+        hidden_states = input_ids
+        input_ids = input_ids.narrow(2,0,1).squeeze(-1)
+        '''no tokenizer'''
         input_shape = input_ids.size()
-        input_ids = input_ids.view(-1, input_shape[-1])
-
-        hidden_states = self.embeddings(input_ids=input_ids, position_ids=position_ids)
-
+        '''source'''
+        # input_ids = input_ids.view(-1, input_shape[-1])
+        # hidden_states = self.embeddings(input_ids=input_ids, position_ids=position_ids)
+        '''source'''
         # CLIP's text model uses causal mask, prepare it here.
         # https://github.com/openai/CLIP/blob/cfcffb90e69f37bf2ff1e988237a0fbe41f33c04/clip/model.py#L324
         causal_attention_mask = _create_4d_causal_attention_mask(
@@ -838,7 +842,12 @@ class CLIPVisionTransformer(nn.Module):
         if pixel_values is None:
             raise ValueError("You have to specify pixel_values")
 
-        hidden_states = self.embeddings(pixel_values)
+        '''no tokenizer'''
+        hidden_states = pixel_values
+        '''no tokenizer'''
+        '''source'''
+        # hidden_states = self.embeddings(pixel_values)
+        '''source'''
         hidden_states = self.pre_layrnorm(hidden_states)
 
         encoder_outputs = self.encoder(
