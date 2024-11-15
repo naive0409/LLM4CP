@@ -17,7 +17,7 @@ import pickle
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 8 #1024
+batch_size = 8  # 256 # 1024
 # device = torch.device('cuda')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -63,8 +63,8 @@ def train(training_data_loader, validate_data_loader):
             pred_t, prev = Variable(batch[0]).to(device), \
                            Variable(batch[1]).to(device)
             optimizer.zero_grad()  # fixed
-            pred_m = model(prev, None, None, None)
-            loss = criterion(pred_m, pred_t)  # compute loss
+            clip_loss, pred_m = model(prev, None, None, None)
+            loss = criterion(pred_m, pred_t) + clip_loss  # compute loss
             epoch_train_loss.append(loss.item())  # save all losses into a vector for one epoch
 
             loss.backward()

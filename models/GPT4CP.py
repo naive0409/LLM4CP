@@ -61,7 +61,6 @@ class Model(nn.Module):
                  patch_size=4, stride=1, res_dim=64,
                  embed='timeF', freq='h', dropout=0.1):
         super(Model, self).__init__()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.mlp = mlp
         self.res_layers = res_layers
         self.pred_len = pred_len
@@ -243,7 +242,8 @@ class Model(nn.Module):
         x_enc_fre = self.enc_embedding1(x_enc_fre, x_mark_enc)  # torch.Size([1024, 16, 512])
         x_enc_fre = self.predict_linear_pre(x_enc_fre.permute(0, 2, 1)).permute(0, 2, 1)
 
-        dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay)
+        dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
+        clip_loss = dec_out.loss
 
         # todo clip输出处理
         dec_out_text = dec_out.text_model_output.last_hidden_state  # [B, L, 512]
@@ -258,7 +258,7 @@ class Model(nn.Module):
 
         dec_out = dec_out * std + mean
 
-        return dec_out[:, -self.pred_len:, :]  # [B, L, D]
+        return clip_loss, dec_out[:, -self.pred_len:, :]  # [B, L, D]
 
 if __name__ == '__main__':
     import torch
