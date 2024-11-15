@@ -58,7 +58,7 @@ class Model(nn.Module):
     # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
-                 patch_size=8, stride=1, res_dim=64,
+                 patch_size=4, stride=1, res_dim=64,
                  embed='timeF', freq='h', dropout=0.1):
         super(Model, self).__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,16 +100,8 @@ class Model(nn.Module):
         elif gpt_type == 'clip':
             # done clip替换gpt2
             # done noTokenizer : hidden_states不用clip embeddings生成
-            # vision_config = CLIPVisionConfig(num_channels=1)
-            # text_config = CLIPTextConfig()
-            # clip_config = CLIPConfig().from_text_vision_configs(text_config, vision_config)
             self.gpt2 = CLIPModel.from_pretrained("./models/openai-clip-vit-base-patch32")
-                                                  # config=clip_config,
-                                                  # ignore_mismatched_sizes=True
-                                                  # )
-            # self.gpt_dim = 512
-            # self.clipVisionModel = CLIPVisionModel.from_pretrained("./models/openai-clip-vit-base-patch32")
-            # self.clip_processor = CLIPProcessor.from_pretrained("./models/openai-clip-vit-base-patch32")
+
         else:
             self.gpt2 = GPT2Model.from_pretrained('./models/gpt2', output_attentions=True, output_hidden_states=True)
             self.gpt2.h = self.gpt2.h[:gpt_layers]
@@ -186,8 +178,22 @@ class Model(nn.Module):
         self.patch_layer = nn.Linear(self.patch_size, self.patch_size)
         self.patch_layer_fre = nn.Linear(self.patch_size, self.patch_size)
         self.predict_linear_pre = nn.Linear(self.prev_len, self.prev_len)
-        self.predict_linear_vision_pre = nn.Linear(1 + int(2 * self.enc_in * self.prev_len // (self.patch_size ** 2)),
-                                                   1 + int(2 * self.enc_in * self.prev_len // (self.patch_size ** 2)))
+        self.vision_features = 1 + int(2 * self.enc_in * self.prev_len // (self.patch_size ** 2))
+        '''
+        self.vision_features是用kernel_size=patch_size,stride=patch_size的conv2d层
+        处理尺寸为(2 * self.enc_in) * self.prev_len的x_enc_delay后
+        结果的维数.
+        例如：enc_in = 48, prev_len = 16, patch_size=4,
+        则self.vision_features = 2*48/4 * 16/4 + 1= 97
+        '''
+        self.predict_linear_vision_pre = nn.Linear(self.vision_features, self.vision_features)
+
+        self.down_layer_vision_dim = nn.Linear(768, 512)
+        self.down_layer_vision_time = nn.Linear(self.vision_features, self.prev_len)
+        '''
+        clip的vision输出为[8, 97, 768]，需要变换到[8, 16, 512]，和text输出相同
+        先下降dim再下降time
+        '''
         self.out_layer_dim = nn.Linear(d_ff, self.c_out * 2)
         self.output_layer_time = nn.Sequential(
             nn.Linear(self.prev_len, self.pred_len)
@@ -237,10 +243,16 @@ class Model(nn.Module):
         x_enc_fre = self.enc_embedding1(x_enc_fre, x_mark_enc)  # torch.Size([1024, 16, 512])
         x_enc_fre = self.predict_linear_pre(x_enc_fre.permute(0, 2, 1)).permute(0, 2, 1)
 
-        dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay)#.last_hidden_state  # [B, L, 768]
-        # todo clip输出处理
-        dec_out = dec_out[:, :, :self.d_ff]
+        dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay)
 
+        # todo clip输出处理
+        dec_out_text = dec_out.text_model_output.last_hidden_state  # [B, L, 512]
+        dec_out_vision = dec_out.vision_model_output.last_hidden_state  # [B, 1 + 16/patch_size * 96/patch_size, 768]
+
+        dec_out_vision = self.down_layer_vision_dim(dec_out_vision)
+        dec_out_vision = self.down_layer_vision_time(dec_out_vision.permute(0, 2, 1)).permute(0, 2, 1)
+
+        dec_out = dec_out_vision + dec_out_text
         dec_out = self.out_layer_dim(dec_out)
         dec_out = self.output_layer_time(dec_out.permute(0, 2, 1)).permute(0, 2, 1)
 
