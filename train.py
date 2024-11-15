@@ -22,22 +22,30 @@ batch_size = 8  # 256 # 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
+loss_alpha_param = 1
 save_path = "Weights/U2U_LLM4CP.pth"
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
-train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
+train_TDD_t_path = "./Training Dataset/H_D_pre_train.mat"
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
 
-# train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=0, is_few=1)  # creat data for training
-# validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=0)  # creat data for validation
-# with open("./code_testing/dataset.pickle", "wb") as f:
+is_U2D = 1
+is_few = 0
+pred_len = 4
+prev_len = 16
+dataset_pickle_name = "./code_testing/dataset_{}_{}_{}_{}.pickle".format(is_U2D, is_few, pred_len, prev_len)
+
+# train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
+# validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=1)  # creat data for validation
+
+# with open(dataset_pickle_name, "wb") as f:
 #     pickle.dump(train_set, f)
 #     pickle.dump(validate_set, f)
 
-with open("./code_testing/dataset.pickle", "rb") as f:
+with open(dataset_pickle_name, "rb") as f:
     train_set = pickle.load(f)
     validate_set = pickle.load(f)
 
-model = Model(pred_len=4, prev_len=16,
+model = Model(pred_len=pred_len, prev_len=prev_len,
               UQh=1, UQv=1, BQh=1, BQv=1).to(device)
 if os.path.exists(save_path):
     model = torch.load(save_path, map_location=device)
@@ -64,7 +72,7 @@ def train(training_data_loader, validate_data_loader):
                            Variable(batch[1]).to(device)
             optimizer.zero_grad()  # fixed
             clip_loss, pred_m = model(prev, None, None, None)
-            loss = criterion(pred_m, pred_t) + clip_loss  # compute loss
+            loss = criterion(pred_m, pred_t) + loss_alpha_param * clip_loss  # compute loss
             epoch_train_loss.append(loss.item())  # save all losses into a vector for one epoch
 
             loss.backward()
@@ -82,8 +90,8 @@ def train(training_data_loader, validate_data_loader):
                 pred_t, prev = Variable(batch[0]).to(device), \
                                Variable(batch[1]).to(device)
                 optimizer.zero_grad()  # fixed
-                pred_m = model(prev, None, None, None)
-                loss = criterion(pred_m, pred_t)  # compute loss
+                clip_loss, pred_m = model(prev, None, None, None)
+                loss = criterion(pred_m, pred_t) + loss_alpha_param * clip_loss  # compute loss
                 epoch_val_loss.append(loss.item())  # save all losses into a vector for one epoch
             v_loss = np.nanmean(np.array(epoch_val_loss))
             print('validate loss: {:.7f}'.format(v_loss))
