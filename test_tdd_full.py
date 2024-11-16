@@ -20,12 +20,15 @@ from PAD import PAD3
 
 if __name__ == "__main__":
     # demo
-    device = torch.device('cuda:1')
+    # device = torch.device('cuda:1')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     is_U2D = 0
-    prev_path = "./test_data/H_U_his_test.mat"      # path of dataset [H_U_his_test]
-    pred_path = "./test_data/H_U_pre_test.mat"      # path of dataset [H_U_pre_test]
-    pred_path_fdd = "./test_data/H_D_pre_test.mat"  # path of dataset [H_D_pre_test]
+    loss_alpha_param = 1
+    prev_path = "./Testing Dataset/H_U_his_test.mat"      # path of dataset [H_U_his_test]
+    pred_path = "./Testing Dataset/H_U_pre_test.mat"      # path of dataset [H_U_pre_test]
+    pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"  # path of dataset [H_D_pre_test]
     model_path = {
+        'clip': 'Weights/full_shot_tdd/241115_22_00/clip.pth',
         'gpt': './Weights/full_shot_tdd/U2U_LLM4CP.pth',
         'transformer': './Weights/full_shot_tdd/U2U_trans.pth',
         'cnn': './Weights/full_shot_tdd/U2U_cnn.pth',
@@ -33,7 +36,8 @@ if __name__ == "__main__":
         'lstm': './Weights/full_shot_tdd/U2U_lstm.pth',
         'rnn': './Weights/full_shot_tdd/U2U_rnn.pth'
     }
-    model_test_enable = ['gpt', 'transformer', 'cnn', 'gru', 'lstm', 'rnn', 'np', 'pad']
+    # model_test_enable = ['gpt', 'transformer', 'cnn', 'gru', 'lstm', 'rnn', 'np', 'pad']
+    model_test_enable = ['clip']
     prev_len = 16
     label_len = 12
     pred_len = 4
@@ -66,7 +70,7 @@ if __name__ == "__main__":
             test_data_prev = test_data_prev / std
             test_data_pred = test_data_pred / std
             lens, _, _, _ = test_data_prev.shape
-            if model_test_enable[i] in ['gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np']:
+            if model_test_enable[i] in ['clip', 'gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np']:
                 if model_test_enable[i] != 'np':
                     model.eval()
                 prev_data = LoadBatch_ofdm_2(test_data_prev)
@@ -82,10 +86,10 @@ if __name__ == "__main__":
                         if model_test_enable[i] == 'gpt':
                             out = model(prev, None, None, None)
                         elif model_test_enable[i] == 'transformer':
-                            encoder_input = prev  
+                            encoder_input = prev
                             dec_inp = torch.zeros_like(encoder_input[:, -pred_len:, :]).to(device)
                             decoder_input = torch.cat([encoder_input[:, prev_len - label_len:prev_len, :], dec_inp],
-                                                      dim=1)  
+                                                      dim=1)
                             out = model(encoder_input, decoder_input)
                         elif model_test_enable[i] in ['lstm', 'rnn', 'gru']:
                             out = model(prev, pred_len, device)
@@ -93,6 +97,8 @@ if __name__ == "__main__":
                             out = model(prev)
                         elif model_test_enable[i] == 'np':
                             out = prev[:, [-1], :].repeat([1, pred_len, 1])
+                        elif model_test_enable[i] == 'clip':
+                            clip_loss, out = model(prev, None, None, None)
                         loss = criterion(out, pred)
                         test_loss_stack.append(loss.item())
                 print("speed", (speed+1)*10, ":  NMSE:", np.nanmean(np.array(test_loss_stack)))
@@ -112,7 +118,7 @@ if __name__ == "__main__":
                         # outputs_AR_freq
                         out = pronyvec(prev, p=8, startidx=prev_len, subcarriernum=K, Nr=Nr, Nt=Nt,
                                        pre_len=pred_len)
-                    out = LoadBatch_ofdm_1(out) 
+                    out = LoadBatch_ofdm_1(out)
                     pred = LoadBatch_ofdm_1(pred)
                     loss = criterion(out, pred)
                     test_loss_stack.append(loss.item())

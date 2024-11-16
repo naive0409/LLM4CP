@@ -13,37 +13,37 @@ import shutil
 from torch.utils.tensorboard import SummaryWriter
 from metrics import NMSELoss, SE_Loss
 import pickle
+import datetime
 
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 8  # 256 # 1024
-# device = torch.device('cuda')
+batch_size = 256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
 loss_alpha_param = 1
 save_path = "Weights/U2U_LLM4CP.pth"
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
-train_TDD_t_path = "./Training Dataset/H_D_pre_train.mat"
+train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
 
-is_U2D = 1
+is_U2D = 0
 is_few = 0
 pred_len = 4
 prev_len = 16
 dataset_pickle_name = "./code_testing/dataset_{}_{}_{}_{}.pickle".format(is_U2D, is_few, pred_len, prev_len)
 
-# train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
-# validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=1)  # creat data for validation
+train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
+validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=is_U2D)  # creat data for validation
 
 # with open(dataset_pickle_name, "wb") as f:
 #     pickle.dump(train_set, f)
 #     pickle.dump(validate_set, f)
 
-with open(dataset_pickle_name, "rb") as f:
-    train_set = pickle.load(f)
-    validate_set = pickle.load(f)
+# with open(dataset_pickle_name, "rb") as f:
+#     train_set = pickle.load(f)
+#     validate_set = pickle.load(f)
 
 model = Model(pred_len=pred_len, prev_len=prev_len,
               UQh=1, UQv=1, BQh=1, BQv=1).to(device)
