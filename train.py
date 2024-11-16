@@ -23,7 +23,21 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
 loss_alpha_param = 1
-save_path = "Weights/U2U_LLM4CP.pth"
+
+time_stamp = datetime.datetime.now().strftime('%Y%m%d_%H_%M')
+try:
+    save_path = "Weights/full_shot_tdd/{}/".format(time_stamp)
+    save_path = os.getcwd() + r'/' + save_path
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        print("New folder at:" + save_path)
+    save_path = save_path + "clip.pth"
+    print('Weights will be stored at:' + save_path)
+except BaseException as msg:
+    print("Fail to make new folder:" + msg)
+
+writer = SummaryWriter(time_stamp)
+
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
 train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
@@ -63,7 +77,8 @@ def train(training_data_loader, validate_data_loader):
     global epochs, best_loss
     print('Start training...')
     for epoch in range(epochs):
-        epoch_train_loss, epoch_val_loss = [], []
+        epoch_train_loss, epoch_train_CLIP_loss, epoch_train_NMSE_loss = [], [], []
+        epoch_val_loss, epoch_val_CLIP_loss, epoch_val_NMSE_loss =  [], [],[]
         # ============Epoch Train=============== #
         model.train()
 
@@ -71,17 +86,40 @@ def train(training_data_loader, validate_data_loader):
             pred_t, prev = Variable(batch[0]).to(device), \
                            Variable(batch[1]).to(device)
             optimizer.zero_grad()  # fixed
-            clip_loss, pred_m = model(prev, None, None, None)
-            loss = criterion(pred_m, pred_t) + loss_alpha_param * clip_loss  # compute loss
-            epoch_train_loss.append(loss.item())  # save all losses into a vector for one epoch
+            clip_model_loss_output, pred_m = model(prev, None, None, None)
+
+            # compute loss
+            NMSE_loss = criterion(pred_m, pred_t)
+            CLIP_loss = loss_alpha_param * clip_model_loss_output
+            loss = NMSE_loss + CLIP_loss
+
+            # save all losses into a vector for one epoch
+            epoch_train_loss.append(loss.item())
+            epoch_train_NMSE_loss.append(NMSE_loss.item())
+            epoch_train_CLIP_loss.append(CLIP_loss.item())
 
             loss.backward()
             optimizer.step()
 
         #       lr_scheduler.step()  # update lr
 
-        t_loss = np.nanmean(np.array(epoch_train_loss))  # compute the mean value of all losses, as one epoch loss
-        print('Epoch: {}/{} training loss: {:.7f}'.format(epoch+1, epochs, t_loss))  # print loss for each epoch
+        # compute the mean value of all losses, as one epoch loss
+        t_loss = np.nanmean(np.array(epoch_train_loss))
+        t_NMSE_loss = np.nanmean(np.array(epoch_train_NMSE_loss))
+        t_CLIP_loss = np.nanmean(np.array(epoch_train_CLIP_loss))
+
+        print('Epoch: {}/{} training loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(epoch+1, epochs, t_loss, t_NMSE_loss, t_CLIP_loss))  # print loss for each epoch
+
+        # writer.add_scalar('training loss', t_loss, epoch)
+        # writer.add_scalar('training NMSE loss', t_NMSE_loss, epoch)
+        # writer.add_scalar('training CLIP loss', t_CLIP_loss, epoch)
+        writer.add_scalars('training loss',
+                           {
+                               'EPOCH': t_loss,
+                               'NMSE': t_NMSE_loss,
+                               'CLIP': t_CLIP_loss
+                            },
+                            epoch)
 
         # ============Epoch Validate=============== #
         model.eval()
@@ -90,11 +128,37 @@ def train(training_data_loader, validate_data_loader):
                 pred_t, prev = Variable(batch[0]).to(device), \
                                Variable(batch[1]).to(device)
                 optimizer.zero_grad()  # fixed
-                clip_loss, pred_m = model(prev, None, None, None)
-                loss = criterion(pred_m, pred_t) + loss_alpha_param * clip_loss  # compute loss
-                epoch_val_loss.append(loss.item())  # save all losses into a vector for one epoch
+                clip_model_loss_output, pred_m = model(prev, None, None, None)
+
+                # compute loss
+                NMSE_loss = criterion(pred_m, pred_t)
+                CLIP_loss = loss_alpha_param * clip_model_loss_output
+                loss = NMSE_loss + CLIP_loss
+
+                # save all losses into a vector for one epoch
+                epoch_val_loss.append(loss.item())
+                epoch_val_NMSE_loss.append(NMSE_loss.item())
+                epoch_val_CLIP_loss.append(CLIP_loss.item())
+
+            # compute the mean value of all losses, as one epoch loss
             v_loss = np.nanmean(np.array(epoch_val_loss))
-            print('validate loss: {:.7f}'.format(v_loss))
+            v_NMSE_loss = np.nanmean(np.array(epoch_val_loss))
+            v_CLIP_loss = np.nanmean(np.array(epoch_val_loss))
+
+            print('validate loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(v_loss, v_NMSE_loss, v_CLIP_loss))
+
+            # writer.add_scalar('validate loss', v_loss, epoch)
+            # writer.add_scalar('validate NMSE loss', v_NMSE_loss, epoch)
+            # writer.add_scalar('validate CLIP loss', v_CLIP_loss, epoch)
+
+            writer.add_scalars('validate loss',
+                            {
+                                'VALIDATE': v_loss,
+                                'NMSE': v_NMSE_loss,
+                                'CLIP': v_CLIP_loss
+                            },
+                            epoch)
+
             if v_loss < best_loss:
                 best_loss = v_loss
                 save_best_checkpoint(model)
