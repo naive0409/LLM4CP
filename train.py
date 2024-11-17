@@ -24,9 +24,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 best_loss = 100
 loss_alpha_param = 1
 
+is_U2D = 0
+is_few = 0
+pred_len = 4
+prev_len = 16
+
 time_stamp = datetime.datetime.now().strftime('%Y%m%d_%H_%M')
 try:
-    save_path = "Weights/full_shot_tdd/{}/".format(time_stamp)
+    if is_U2D == 1:
+        save_path = "Weights/full_shot_fdd/{}/".format(time_stamp)
+    else:
+        save_path = "Weights/full_shot_tdd/{}/".format(time_stamp)
     save_path = os.getcwd() + r'/' + save_path
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -39,13 +47,12 @@ except BaseException as msg:
 writer = SummaryWriter(comment=time_stamp)
 
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
-train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
+if is_U2D == 1:
+    train_TDD_t_path = "./Training Dataset/H_D_pre_train.mat"
+else:
+    train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
 
-is_U2D = 0
-is_few = 0
-pred_len = 4
-prev_len = 16
 dataset_pickle_name = "./code_testing/dataset_{}_{}_{}_{}.pickle".format(is_U2D, is_few, pred_len, prev_len)
 
 train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
