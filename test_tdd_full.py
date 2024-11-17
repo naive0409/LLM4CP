@@ -16,6 +16,7 @@ import hdf5storage
 import tqdm
 from pvec import pronyvec
 from PAD import PAD3
+from scipy.io import savemat
 
 
 if __name__ == "__main__":
@@ -70,6 +71,7 @@ if __name__ == "__main__":
             test_data_prev = test_data_prev / std
             test_data_pred = test_data_pred / std
             lens, _, _, _ = test_data_prev.shape
+            # print("lens = {}".format(lens))
             if model_test_enable[i] in ['clip', 'gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np']:
                 if model_test_enable[i] != 'np':
                     model.eval()
@@ -77,6 +79,10 @@ if __name__ == "__main__":
                 pred_data = LoadBatch_ofdm_2(test_data_pred)
                 bs = 64
                 cycle_times = lens // bs
+                # print("cycle_times = {}".format(cycle_times))
+                filename = 'code_testing/csi_output/241115_22_00/' + '{}.mat'.format((speed+1)*10)
+                ground_truth = []
+                model_outputs = []
                 with torch.no_grad():
                     for cyt in range(cycle_times):
                         prev = prev_data[cyt * bs:(cyt + 1) * bs, :, :].to(device)
@@ -101,6 +107,9 @@ if __name__ == "__main__":
                             clip_loss, out = model(prev, None, None, None)
                         loss = criterion(out, pred)
                         test_loss_stack.append(loss.item())
+                        ground_truth.append(pred.cpu().detach().numpy())
+                        model_outputs.append(out.cpu().detach().numpy())
+                savemat(filename, {'ground_truth':np.array(ground_truth),'model_output':np.array(model_outputs)})
                 print("speed", (speed+1)*10, ":  NMSE:", np.nanmean(np.array(test_loss_stack)))
                 NMSE[i].append(np.nanmean(np.array(test_loss_stack)))
             elif model_test_enable[i] in ['pad', 'pvec']:

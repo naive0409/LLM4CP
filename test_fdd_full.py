@@ -16,6 +16,7 @@ import hdf5storage
 import tqdm
 from pvec import pronyvec
 from PAD import PAD3
+from scipy.io import savemat
 
 if __name__ == "__main__":
     # demo
@@ -72,6 +73,9 @@ if __name__ == "__main__":
                 pred_data = LoadBatch_ofdm_2(test_data_pred)
                 bs = 64
                 cycle_times = lens // bs
+                filename = 'code_testing/csi_output/20241116_17_42/' + '{}.mat'.format((speed+1)*10)
+                ground_truth = []
+                model_outputs = []
                 with torch.no_grad():
                     for cyt in range(cycle_times):
                         prev = prev_data[cyt * bs:(cyt + 1) * bs, :, :].to(device)
@@ -96,6 +100,9 @@ if __name__ == "__main__":
                             clip_loss, out = model(prev, None, None, None)
                         loss = criterion(out, pred)
                         test_loss_stack.append(loss.item())
+                        ground_truth.append(pred.cpu().detach().numpy())
+                        model_outputs.append(out.cpu().detach().numpy())
+                savemat(filename, {'ground_truth':np.array(ground_truth),'model_output':np.array(model_outputs)})
                 print("speed", (speed + 1) * 10, ":  NMSE:", np.nanmean(np.array(test_loss_stack)))
                 NMSE[i].append(np.nanmean(np.array(test_loss_stack)))
 
