@@ -21,10 +21,11 @@ if __name__ == "__main__":
     # demo
     device = torch.device('cuda:1')
     is_U2D = 1
-    prev_path = "./test_data/H_U_his_test.mat"      # path of dataset [H_U_his_test]
-    pred_path = "./test_data/H_U_pre_test.mat"      # path of dataset [H_U_pre_test]
-    pred_path_fdd = "./test_data/H_D_pre_test.mat"  # path of dataset [H_D_pre_test]
+    prev_path = "./Testing Dataset/H_U_his_test.mat"
+    pred_path = "./Testing Dataset/H_U_pre_test.mat"
+    pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
     model_path = {
+        'clip': 'Weights/full_shot_fdd/20241116_17_42/clip.copy.pth',
         'gpt': './Weights/full_shot_fdd/U2D_LLM4CP.pth',
         'transformer': './Weights/full_shot_fdd/U2D_trans.pth',
         'cnn': './Weights/full_shot_fdd/U2D_cnn.pth',
@@ -32,7 +33,8 @@ if __name__ == "__main__":
         'lstm': './Weights/full_shot_fdd/U2D_lstm.pth',
         'rnn': './Weights/full_shot_fdd/U2D_rnn.pth'
     }
-    model_test_enable = ['gpt', 'transformer', 'cnn', 'gru', 'lstm', 'rnn', 'np']
+    # model_test_enable = ['gpt', 'transformer', 'cnn', 'gru', 'lstm', 'rnn', 'np']
+    model_test_enable = ['clip']
     prev_len = 16
     label_len = 12
     pred_len = 4
@@ -63,7 +65,7 @@ if __name__ == "__main__":
             test_data_prev = test_data_prev / std
             test_data_pred = test_data_pred / std
             lens, _, _, _ = test_data_prev.shape
-            if model_test_enable[i] in ['gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np']:
+            if model_test_enable[i] in ['clip', 'gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np']:
                 if model_test_enable[i] != 'np':
                     model.eval()
                 prev_data = LoadBatch_ofdm_2(test_data_prev)
@@ -90,6 +92,8 @@ if __name__ == "__main__":
                             out = model(prev)
                         elif model_test_enable[i] == 'np':
                             out = prev[:, [-1], :].repeat([1, pred_len, 1])
+                        elif model_test_enable[i] == 'clip':
+                            clip_loss, out = model(prev, None, None, None)
                         loss = criterion(out, pred)
                         test_loss_stack.append(loss.item())
                 print("speed", (speed + 1) * 10, ":  NMSE:", np.nanmean(np.array(test_loss_stack)))

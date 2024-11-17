@@ -20,8 +20,8 @@ from PAD import PAD3
 
 if __name__ == "__main__":
     # demo
-    # device = torch.device('cuda:1')
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda:1')
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     is_U2D = 0
     loss_alpha_param = 1
     prev_path = "./Testing Dataset/H_U_his_test.mat"      # path of dataset [H_U_his_test]
