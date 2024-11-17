@@ -36,7 +36,7 @@ try:
 except BaseException as msg:
     print("Fail to make new folder:" + msg)
 
-writer = SummaryWriter(time_stamp)
+writer = SummaryWriter(comment=time_stamp)
 
 train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
 train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
@@ -142,8 +142,8 @@ def train(training_data_loader, validate_data_loader):
 
             # compute the mean value of all losses, as one epoch loss
             v_loss = np.nanmean(np.array(epoch_val_loss))
-            v_NMSE_loss = np.nanmean(np.array(epoch_val_loss))
-            v_CLIP_loss = np.nanmean(np.array(epoch_val_loss))
+            v_NMSE_loss = np.nanmean(np.array(epoch_val_NMSE_loss))
+            v_CLIP_loss = np.nanmean(np.array(epoch_val_CLIP_loss))
 
             print('validate loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(v_loss, v_NMSE_loss, v_CLIP_loss))
 
