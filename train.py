@@ -24,7 +24,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 best_loss = 100
 loss_alpha_param = 1
 
-is_U2D = 0
+use_deepmimo_data = True
+is_U2D = 1
 is_few = 0
 pred_len = 4
 prev_len = 16
@@ -46,17 +47,30 @@ except BaseException as msg:
 
 writer = SummaryWriter(comment=time_stamp)
 
-train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
-if is_U2D == 1:
-    train_TDD_t_path = "./Training Dataset/H_D_pre_train.mat"
+if use_deepmimo_data:
+    train_TDD_r_path = "./DEEPMIMOI1/DeepMIMO_dataset/c_up_his.mat"  # 现在train valid test在一个文件中
+    if is_U2D == 1:
+        train_TDD_t_path = "./DEEPMIMOI1/DeepMIMO_dataset/c_down_pre.mat"
+    else:
+        train_TDD_t_path = "./DEEPMIMOI1/DeepMIMO_dataset/c_up_pre.mat"
 else:
-    train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
+    train_TDD_r_path = "./Training Dataset/H_U_his_train.mat"
+    if is_U2D == 1:
+        train_TDD_t_path = "./Training Dataset/H_D_pre_train.mat"
+    else:
+        train_TDD_t_path = "./Training Dataset/H_U_pre_train.mat"
+
 key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
 
 dataset_pickle_name = "./code_testing/dataset_{}_{}_{}_{}.pickle".format(is_U2D, is_few, pred_len, prev_len)
 
-train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
-validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=is_U2D)  # creat data for validation
+# train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
+# validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=is_U2D)  # creat data for validation
+
+train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few,
+                        train_per=0.8, use_deepmimo_data=use_deepmimo_data)  # 留0.1给test
+validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=is_U2D,
+                           train_per=0.8, use_deepmimo_data=use_deepmimo_data)  # 留0.1给test
 
 # with open(dataset_pickle_name, "wb") as f:
 #     pickle.dump(train_set, f)
