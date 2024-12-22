@@ -1,5 +1,5 @@
 clear;
-folder = "./csi_output/20241116_17_42/";
+folder = "./csi_output/20241221_20_14/";
 
 for speed = 10:10:100
     filename = sprintf(folder + "%d.mat",speed);

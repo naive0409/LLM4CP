@@ -22,11 +22,17 @@ if __name__ == "__main__":
     # demo
     device = torch.device('cuda:1')
     is_U2D = 1
-    prev_path = "./Testing Dataset/H_U_his_test.mat"
-    pred_path = "./Testing Dataset/H_U_pre_test.mat"
-    pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
+    use_deepmimo_data = True
+    if use_deepmimo_data:
+        prev_path = "./DEEPMIMOI1/DeepMIMO_dataset/c_up_his.mat"
+        pred_path = "./DEEPMIMOI1/DeepMIMO_dataset/c_up_pre.mat"
+        pred_path_fdd = "./DEEPMIMOI1/DeepMIMO_dataset/c_down_pre.mat"
+    else:
+        prev_path = "./Testing Dataset/H_U_his_test.mat"
+        pred_path = "./Testing Dataset/H_U_pre_test.mat"
+        pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
     model_path = {
-        'clip': 'Weights/full_shot_fdd/20241116_17_42/clip.copy.pth',
+        'clip': 'Weights/full_shot_fdd/20241221_20_14/clip.pth',
         'gpt': './Weights/full_shot_fdd/U2D_LLM4CP.pth',
         'transformer': './Weights/full_shot_fdd/U2D_trans.pth',
         'cnn': './Weights/full_shot_fdd/U2D_cnn.pth',
@@ -44,24 +50,53 @@ if __name__ == "__main__":
     # load model and test
     criterion = NMSELoss()
     NMSE = [[] for i in model_test_enable]
-    test_data_prev_base = hdf5storage.loadmat(prev_path)['H_U_his_test']
-    if is_U2D:
-        test_data_pred_base = hdf5storage.loadmat(pred_path_fdd)['H_D_pre_test']
+    if not use_deepmimo_data:
+        test_data_prev_base = hdf5storage.loadmat(prev_path)['H_U_his_test']
+        if is_U2D:
+            test_data_pred_base = hdf5storage.loadmat(pred_path_fdd)['H_D_pre_test']
+        else:
+            test_data_pred_base = hdf5storage.loadmat(pred_path)['H_U_pre_test']
     else:
-        test_data_pred_base = hdf5storage.loadmat(pred_path)['H_U_pre_test']
+        test_data_prev_base = hdf5storage.loadmat(prev_path)['c_up_his']
+        if is_U2D:
+            test_data_pred_base = hdf5storage.loadmat(pred_path_fdd)['c_down_pre']
+        else:
+            test_data_pred_base = hdf5storage.loadmat(pred_path)['c_up_pre']
+        test_data_prev_base = rearrange(test_data_prev_base, 'a b (d e) -> d a (b e)', e=32)  # 145600/32=4550 , 16, 48*32=1536
+        test_data_pred_base = rearrange(test_data_pred_base, 'a b (d e) -> d a (b e)', e=32)
+        batch = test_data_prev_base.shape[0]
+        test_data_prev_base = test_data_prev_base[-int(0.1 * batch):, ...]
+        test_data_pred_base = test_data_pred_base[-int(0.1 * batch):, ...]
+
     for i in range(len(model_test_enable)):
         print("---------------------------------------------------------------")
         print("loading ", i + 1, "th model......", model_test_enable[i])
         if model_test_enable[i] not in ['pad', 'pvec', 'np']:
             model = torch.load(model_path[model_test_enable[i]], map_location=device).to(device)
-        for speed in range(0, 10):
+        speedlist = range(1) if use_deepmimo_data else range(0, 10)
+        for speed in speedlist:
             test_loss_stack = []
             test_loss_stack_se = []
             test_loss_stack_se0 = []
-            test_data_prev = test_data_prev_base[[speed], ...]
-            test_data_pred = test_data_pred_base[[speed], ...]
-            test_data_prev = rearrange(test_data_prev, 'v b l k n m c -> (v b c) (n m) l (k)')
-            test_data_pred = rearrange(test_data_pred, 'v b l k n m c -> (v b c) (n m) l (k)')
+            if use_deepmimo_data:
+                test_data_prev = test_data_prev_base
+                test_data_pred = test_data_pred_base
+                test_data_prev = rearrange(test_data_prev, 'a l (d e) -> a e l d', e=32, d=48)
+                test_data_pred = rearrange(test_data_pred, 'a l (d e) -> a e l d', e=32, d=48)
+                print(test_data_prev.shape)
+                # 455, 32, 16, 48
+                print(test_data_pred.shape)
+                # 455, 32, 4 , 48
+            else:
+                # (10, 1000, 16, 48, 4, 4, 2)
+                test_data_prev = test_data_prev_base[[speed], ...]
+                test_data_pred = test_data_pred_base[[speed], ...]
+                # (1, 1000, 16, 48, 4, 4, 2)
+                # (v, b   ,  l,  k, n, m, c)
+                test_data_prev = rearrange(test_data_prev, 'v b l k n m c -> (v b c) (n m) l (k)')
+                test_data_pred = rearrange(test_data_pred, 'v b l k n m c -> (v b c) (n m) l (k)')
+                # (2000, 16, 16, 48)
+
             std = np.sqrt(np.std(np.abs(test_data_prev) ** 2))
             test_data_prev = test_data_prev / std
             test_data_pred = test_data_pred / std
@@ -73,7 +108,7 @@ if __name__ == "__main__":
                 pred_data = LoadBatch_ofdm_2(test_data_pred)
                 bs = 64
                 cycle_times = lens // bs
-                filename = 'code_testing/csi_output/20241116_17_42/' + '{}.mat'.format((speed+1)*10)
+                filename = 'code_testing/csi_output/20241221_20_14/' + '{}.mat'.format((speed+1)*10)
                 ground_truth = []
                 model_outputs = []
                 with torch.no_grad():
