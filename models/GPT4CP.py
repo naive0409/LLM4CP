@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch import optim
 from transformers import GPT2ForSequenceClassification
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model
-from transformers import CLIPProcessor, CLIPModel, CLIPVisionModel, CLIPConfig, CLIPVisionConfig, CLIPTextConfig
+from transformers import CLIPModel, CLIPVisionModel, CLIPTextModel
 from einops import rearrange
 from Embed import DataEmbedding, VisionEmbedding
 
@@ -52,9 +52,10 @@ class Res_block(nn.Module):
 
 
 class Model(nn.Module):
-    model_list = ["gpt2", "clip", "clip_vision"]
+    model_list = ["gpt2", "clip", "clip_vision", "clip_text"]
 
-    def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # clip
+    def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
+    # def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # done clip vision
     # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
@@ -102,6 +103,8 @@ class Model(nn.Module):
             self.gpt2 = CLIPModel.from_pretrained("./models/openai-clip-vit-base-patch32")
         elif gpt_type == 'clip_vision':
             self.gpt2 = CLIPVisionModel.from_pretrained("./models/openai-clip-vit-base-patch32")
+        elif gpt_type == 'clip_text':
+            self.gpt2 = CLIPTextModel.from_pretrained("./models/openai-clip-vit-base-patch32")
 
         else:
             self.gpt2 = GPT2Model.from_pretrained('./models/gpt2', output_attentions=True, output_hidden_states=True)
@@ -148,7 +151,7 @@ class Model(nn.Module):
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
-        elif gpt_type == 'clip' or gpt_type == 'clip_vision':
+        elif gpt_type == 'clip' or gpt_type == 'clip_vision' or gpt_type == 'clip_text':
             print('Model:clip')
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
                 if 'layer-norm' in name or 'layernorm' in name or 'layer_norm' in name:
@@ -248,7 +251,9 @@ class Model(nn.Module):
         # enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))
 
         # dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
-        dec_out = self.gpt2(pixel_values=enc_out)
+        # dec_out = self.gpt2(pixel_values=enc_out)
+        dec_out = self.gpt2(input_ids=enc_out)  # done clip text
+        # dec_out = self.gpt2(pixel_values=enc_out)  # done clip vision
         # clip_loss = dec_out.loss
 
         # todo clip输出处理
