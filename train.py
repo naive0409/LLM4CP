@@ -138,7 +138,7 @@ def train(training_data_loader, validate_data_loader):
                 pred_t, prev = Variable(batch[0]).to(device), \
                                Variable(batch[1]).to(device)
                 optimizer.zero_grad()  # fixed
-                clip_model_loss_output, pred_m = model(prev, None, None, None)
+                # clip_model_loss_output, pred_m = model(prev, None, None, None)
                 pred_m = model(prev, None, None, None)
 
                 # compute loss
