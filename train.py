@@ -18,13 +18,13 @@ import datetime
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 256
+batch_size = 8 #256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
 loss_alpha_param = 1
 
-is_U2D = 0
+is_U2D = 1
 is_few = 0
 pred_len = 4
 prev_len = 16
@@ -55,16 +55,16 @@ key = ['H_U_his_train', 'H_U_pre_train', 'H_D_pre_train']
 
 dataset_pickle_name = "./code_testing/dataset_{}_{}_{}_{}.pickle".format(is_U2D, is_few, pred_len, prev_len)
 
-train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
-validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=is_U2D)  # creat data for validation
+# train_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=1, is_U2D=is_U2D, is_few=is_few)  # creat data for training
+# validate_set = Dataset_Pro(train_TDD_r_path, train_TDD_t_path, is_train=0, is_U2D=is_U2D)  # creat data for validation
 
 # with open(dataset_pickle_name, "wb") as f:
 #     pickle.dump(train_set, f)
 #     pickle.dump(validate_set, f)
 
-# with open(dataset_pickle_name, "rb") as f:
-#     train_set = pickle.load(f)
-#     validate_set = pickle.load(f)
+with open(dataset_pickle_name, "rb") as f:
+    train_set = pickle.load(f)
+    validate_set = pickle.load(f)
 
 model = Model(pred_len=pred_len, prev_len=prev_len,
               UQh=1, UQv=1, BQh=1, BQv=1).to(device)
@@ -93,17 +93,19 @@ def train(training_data_loader, validate_data_loader):
             pred_t, prev = Variable(batch[0]).to(device), \
                            Variable(batch[1]).to(device)
             optimizer.zero_grad()  # fixed
-            clip_model_loss_output, pred_m = model(prev, None, None, None)
+            # clip_model_loss_output, pred_m = model(prev, None, None, None)
+            pred_m = model(prev, None, None, None)
 
             # compute loss
             NMSE_loss = criterion(pred_m, pred_t)
-            CLIP_loss = loss_alpha_param * clip_model_loss_output
-            loss = NMSE_loss + CLIP_loss
+            # CLIP_loss = loss_alpha_param * clip_model_loss_output
+            # loss = NMSE_loss + CLIP_loss
+            loss = NMSE_loss
 
             # save all losses into a vector for one epoch
             epoch_train_loss.append(loss.item())
             epoch_train_NMSE_loss.append(NMSE_loss.item())
-            epoch_train_CLIP_loss.append(CLIP_loss.item())
+            # epoch_train_CLIP_loss.append(CLIP_loss.item())
 
             loss.backward()
             optimizer.step()
@@ -113,9 +115,10 @@ def train(training_data_loader, validate_data_loader):
         # compute the mean value of all losses, as one epoch loss
         t_loss = np.nanmean(np.array(epoch_train_loss))
         t_NMSE_loss = np.nanmean(np.array(epoch_train_NMSE_loss))
-        t_CLIP_loss = np.nanmean(np.array(epoch_train_CLIP_loss))
+        # t_CLIP_loss = np.nanmean(np.array(epoch_train_CLIP_loss))
 
-        print('Epoch: {}/{} training loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(epoch+1, epochs, t_loss, t_NMSE_loss, t_CLIP_loss))  # print loss for each epoch
+        # print('Epoch: {}/{} training loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(epoch+1, epochs, t_loss, t_NMSE_loss, t_CLIP_loss))  # print loss for each epoch
+        print('Epoch: {}/{} training loss: {:.7f}'.format(epoch+1, epochs, t_loss))  # print loss for each epoch
 
         # writer.add_scalar('training loss', t_loss, epoch)
         # writer.add_scalar('training NMSE loss', t_NMSE_loss, epoch)
@@ -124,7 +127,7 @@ def train(training_data_loader, validate_data_loader):
                            {
                                'EPOCH': t_loss,
                                'NMSE': t_NMSE_loss,
-                               'CLIP': t_CLIP_loss
+                               # 'CLIP': t_CLIP_loss
                             },
                             epoch)
 
@@ -139,20 +142,22 @@ def train(training_data_loader, validate_data_loader):
 
                 # compute loss
                 NMSE_loss = criterion(pred_m, pred_t)
-                CLIP_loss = loss_alpha_param * clip_model_loss_output
-                loss = NMSE_loss + CLIP_loss
+                # CLIP_loss = loss_alpha_param * clip_model_loss_output
+                # loss = NMSE_loss + CLIP_loss
+                loss = NMSE_loss
 
                 # save all losses into a vector for one epoch
                 epoch_val_loss.append(loss.item())
                 epoch_val_NMSE_loss.append(NMSE_loss.item())
-                epoch_val_CLIP_loss.append(CLIP_loss.item())
+                # epoch_val_CLIP_loss.append(CLIP_loss.item())
 
             # compute the mean value of all losses, as one epoch loss
             v_loss = np.nanmean(np.array(epoch_val_loss))
             v_NMSE_loss = np.nanmean(np.array(epoch_val_NMSE_loss))
-            v_CLIP_loss = np.nanmean(np.array(epoch_val_CLIP_loss))
+            # v_CLIP_loss = np.nanmean(np.array(epoch_val_CLIP_loss))
 
-            print('validate loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(v_loss, v_NMSE_loss, v_CLIP_loss))
+            # print('validate loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(v_loss, v_NMSE_loss, v_CLIP_loss))
+            print('validate loss: {:.7f}'.format(v_loss))
 
             # writer.add_scalar('validate loss', v_loss, epoch)
             # writer.add_scalar('validate NMSE loss', v_NMSE_loss, epoch)
@@ -162,7 +167,7 @@ def train(training_data_loader, validate_data_loader):
                             {
                                 'VALIDATE': v_loss,
                                 'NMSE': v_NMSE_loss,
-                                'CLIP': v_CLIP_loss
+                                # 'CLIP': v_CLIP_loss
                             },
                             epoch)
 

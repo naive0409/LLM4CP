@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch import optim
 from transformers import GPT2ForSequenceClassification
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model
-from transformers import CLIPProcessor, CLIPModel, CLIPConfig, CLIPVisionConfig, CLIPTextConfig
+from transformers import CLIPProcessor, CLIPModel, CLIPVisionModel, CLIPConfig, CLIPVisionConfig, CLIPTextConfig
 from einops import rearrange
 from Embed import DataEmbedding, VisionEmbedding
 
@@ -52,9 +52,9 @@ class Res_block(nn.Module):
 
 
 class Model(nn.Module):
-    model_list = ["gpt2", "clip"]
+    model_list = ["gpt2", "clip", "clip_vision"]
 
-    def __init__(self, gpt_type=model_list[1], d_ff=512, d_model=768, gpt_layers=6,  # clip
+    def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # clip
     # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
@@ -81,7 +81,7 @@ class Model(nn.Module):
         self.enc_in = K * UQh * UQv * BQh * BQv
         self.c_out = K * UQh * UQv * BQh * BQv
 
-        self.enc_embedding1 = DataEmbedding(2 * self.enc_in, 512, embed, freq, dropout)
+        self.enc_embedding1 = DataEmbedding(2 * self.enc_in, self.d_model, embed, freq, dropout)
         self.enc_embedding2 = VisionEmbedding(image_size=[self.prev_len, 2 * self.enc_in], patch_size=self.patch_size)
 
         if gpt_type == 'gpt2-medium':
@@ -100,6 +100,8 @@ class Model(nn.Module):
             # done clip替换gpt2
             # done noTokenizer : hidden_states不用clip embeddings生成
             self.gpt2 = CLIPModel.from_pretrained("./models/openai-clip-vit-base-patch32")
+        elif gpt_type == 'clip_vision':
+            self.gpt2 = CLIPVisionModel.from_pretrained("./models/openai-clip-vit-base-patch32")
 
         else:
             self.gpt2 = GPT2Model.from_pretrained('./models/gpt2', output_attentions=True, output_hidden_states=True)
@@ -146,7 +148,7 @@ class Model(nn.Module):
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
-        elif gpt_type == 'clip':
+        elif gpt_type == 'clip' or gpt_type == 'clip_vision':
             print('Model:clip')
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
                 if 'layer-norm' in name or 'layernorm' in name or 'layer_norm' in name:
@@ -228,37 +230,44 @@ class Model(nn.Module):
         x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
         x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
 
-        # x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
-        # x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
-        #
-        # enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768] torch.Size([1024, 16, 768])
+        x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
+        x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
 
-        # vision emb
-        x_enc_delay = rearrange(x_enc_delay, 'b o l k -> b 1 l (k o)', o=2)  # torch.Size([1024, 16, 96])
-        x_enc_delay = self.enc_embedding2(x_enc_delay)
-        x_enc_delay = self.predict_linear_vision_pre(x_enc_delay.permute(0, 2, 1)).permute(0, 2, 1)
-        # text emb
-        x_enc_fre = rearrange(x_enc_fre, 'b o l k -> b l (k o)', o=2)  # torch.Size([1024, 16, 96])
-        x_enc_fre = self.enc_embedding1(x_enc_fre, x_mark_enc)  # torch.Size([1024, 16, 512])
-        x_enc_fre = self.predict_linear_pre(x_enc_fre.permute(0, 2, 1)).permute(0, 2, 1)
+        enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768] torch.Size([1024, 16, 768])
 
-        dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
-        clip_loss = dec_out.loss
+        # # vision emb
+        # x_enc_delay = rearrange(x_enc_delay, 'b o l k -> b 1 l (k o)', o=2)  # torch.Size([1024, 16, 96])
+        # x_enc_delay = self.enc_embedding2(x_enc_delay)
+        # x_enc_delay = self.predict_linear_vision_pre(x_enc_delay.permute(0, 2, 1)).permute(0, 2, 1)
+        # # text emb
+        # x_enc_fre = rearrange(x_enc_fre, 'b o l k -> b l (k o)', o=2)  # torch.Size([1024, 16, 96])
+        # x_enc_fre = self.enc_embedding1(x_enc_fre, x_mark_enc)  # torch.Size([1024, 16, 512])
+        # x_enc_fre = self.predict_linear_pre(x_enc_fre.permute(0, 2, 1)).permute(0, 2, 1)
+
+        enc_out = self.predict_linear_pre(enc_out.permute(0, 2, 1)).permute(0, 2, 1)
+        # enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))
+
+        # dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
+        dec_out = self.gpt2(pixel_values=enc_out)
+        # clip_loss = dec_out.loss
 
         # todo clip输出处理
-        dec_out_text = dec_out.text_model_output.last_hidden_state  # [B, L, 512]
-        dec_out_vision = dec_out.vision_model_output.last_hidden_state  # [B, 1 + 16/patch_size * 96/patch_size, 768]
+        # dec_out_text = dec_out.text_model_output.last_hidden_state  # [B, L, 512]
+        # dec_out_vision = dec_out.vision_model_output.last_hidden_state  # [B, 1 + 16/patch_size * 96/patch_size, 768]
+        dec_out = dec_out.last_hidden_state  # [B, L, 512]
+        dec_out = dec_out[:, :, :self.d_ff]
 
-        dec_out_vision = self.down_layer_vision_dim(dec_out_vision)
-        dec_out_vision = self.down_layer_vision_time(dec_out_vision.permute(0, 2, 1)).permute(0, 2, 1)
+        # dec_out_vision = self.down_layer_vision_dim(dec_out_vision)
+        # dec_out_vision = self.down_layer_vision_time(dec_out_vision.permute(0, 2, 1)).permute(0, 2, 1)
 
-        dec_out = dec_out_vision + dec_out_text
+        # dec_out = dec_out_vision + dec_out_text
         dec_out = self.out_layer_dim(dec_out)
         dec_out = self.output_layer_time(dec_out.permute(0, 2, 1)).permute(0, 2, 1)
 
         dec_out = dec_out * std + mean
 
-        return clip_loss, dec_out[:, -self.pred_len:, :]  # [B, L, D]
+        # return clip_loss, dec_out[:, -self.pred_len:, :]  # [B, L, D]
+        return dec_out[:, -self.pred_len:, :]  # [B, L, D]
 
 if __name__ == '__main__':
     import torch
