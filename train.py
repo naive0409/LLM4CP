@@ -139,6 +139,7 @@ def train(training_data_loader, validate_data_loader):
                                Variable(batch[1]).to(device)
                 optimizer.zero_grad()  # fixed
                 clip_model_loss_output, pred_m = model(prev, None, None, None)
+                pred_m = model(prev, None, None, None)
 
                 # compute loss
                 NMSE_loss = criterion(pred_m, pred_t)
