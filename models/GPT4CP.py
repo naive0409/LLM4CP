@@ -54,9 +54,9 @@ class Res_block(nn.Module):
 class Model(nn.Module):
     model_list = ["gpt2", "clip", "clip_vision", "clip_text"]
 
-    def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
+    # def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
     # def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # done clip vision
-    # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # gpt2
+    def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # done gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=4, stride=1, res_dim=64,
@@ -251,15 +251,16 @@ class Model(nn.Module):
         # enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))
 
         # dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
-        # dec_out = self.gpt2(pixel_values=enc_out)
-        dec_out = self.gpt2(input_ids=enc_out)  # done clip text
+        # dec_out = self.gpt2(pixel_values=enc_out)  # done clip
+        # dec_out = self.gpt2(input_ids=enc_out)  # done clip text
         # dec_out = self.gpt2(pixel_values=enc_out)  # done clip vision
+        dec_out = self.gpt2(inputs_embeds=enc_out).last_hidden_state  # done gpt2 [B , L, 768]
         # clip_loss = dec_out.loss
 
         # todo clip输出处理
         # dec_out_text = dec_out.text_model_output.last_hidden_state  # [B, L, 512]
         # dec_out_vision = dec_out.vision_model_output.last_hidden_state  # [B, 1 + 16/patch_size * 96/patch_size, 768]
-        dec_out = dec_out.last_hidden_state  # [B, L, 512]
+        # dec_out = dec_out.last_hidden_state  # [B, L, 512]
         dec_out = dec_out[:, :, :self.d_ff]
 
         # dec_out_vision = self.down_layer_vision_dim(dec_out_vision)
