@@ -26,7 +26,7 @@ if __name__ == "__main__":
     prev_path = "./Testing Dataset/H_U_his_test.mat"
     pred_path = "./Testing Dataset/H_U_pre_test.mat"
     pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
-    date_ = '20250107_21_59'
+    date_ = '20250412_20_46'
     model_path = {
         'clip': 'Weights/full_shot_fdd/{}/clip.pth'.format(date_),
         'gpt': './Weights/full_shot_fdd/U2D_LLM4CP.pth',
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         print("loading ", i + 1, "th model......", model_test_enable[i])
         if model_test_enable[i] not in ['pad', 'pvec', 'np']:
             model = torch.load(model_path[model_test_enable[i]], map_location=device).to(device)
-        for snr in [0,5,10,15,20,25]:
+        for snr in [0,5,10,15,20,25,30,35,40]:
             for speed in range(0, 1):
                 test_loss_stack = []
                 test_loss_stack_se = []
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                         model.eval()
                     prev_data = LoadBatch_ofdm_2(test_data_prev)
                     pred_data = LoadBatch_ofdm_2(test_data_pred)
-                    bs = 64
+                    bs = 16
                     cycle_times = lens // bs
                     pth = 'code_testing/csi_output/{}'.format(date_)
                     try:

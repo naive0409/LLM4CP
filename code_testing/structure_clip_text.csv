@@ -1,5 +1,5 @@
 0;False;[49408, 512];text_model.embeddings.token_embedding.weight
-1;True;[77, 512];text_model.embeddings.position_embedding.weight
+1;False;[77, 512];text_model.embeddings.position_embedding.weight
 2;False;[512, 512];text_model.encoder.layers.0.self_attn.k_proj.weight
 3;False;[512];text_model.encoder.layers.0.self_attn.k_proj.bias
 4;False;[512, 512];text_model.encoder.layers.0.self_attn.v_proj.weight
@@ -8,14 +8,14 @@
 7;False;[512];text_model.encoder.layers.0.self_attn.q_proj.bias
 8;False;[512, 512];text_model.encoder.layers.0.self_attn.out_proj.weight
 9;False;[512];text_model.encoder.layers.0.self_attn.out_proj.bias
-10;True;[512];text_model.encoder.layers.0.layer_norm1.weight
-11;True;[512];text_model.encoder.layers.0.layer_norm1.bias
+10;False;[512];text_model.encoder.layers.0.layer_norm1.weight
+11;False;[512];text_model.encoder.layers.0.layer_norm1.bias
 12;False;[2048, 512];text_model.encoder.layers.0.mlp.fc1.weight
 13;False;[2048];text_model.encoder.layers.0.mlp.fc1.bias
 14;False;[512, 2048];text_model.encoder.layers.0.mlp.fc2.weight
 15;False;[512];text_model.encoder.layers.0.mlp.fc2.bias
-16;True;[512];text_model.encoder.layers.0.layer_norm2.weight
-17;True;[512];text_model.encoder.layers.0.layer_norm2.bias
+16;False;[512];text_model.encoder.layers.0.layer_norm2.weight
+17;False;[512];text_model.encoder.layers.0.layer_norm2.bias
 18;False;[512, 512];text_model.encoder.layers.1.self_attn.k_proj.weight
 19;False;[512];text_model.encoder.layers.1.self_attn.k_proj.bias
 20;False;[512, 512];text_model.encoder.layers.1.self_attn.v_proj.weight
@@ -24,14 +24,14 @@
 23;False;[512];text_model.encoder.layers.1.self_attn.q_proj.bias
 24;False;[512, 512];text_model.encoder.layers.1.self_attn.out_proj.weight
 25;False;[512];text_model.encoder.layers.1.self_attn.out_proj.bias
-26;True;[512];text_model.encoder.layers.1.layer_norm1.weight
-27;True;[512];text_model.encoder.layers.1.layer_norm1.bias
+26;False;[512];text_model.encoder.layers.1.layer_norm1.weight
+27;False;[512];text_model.encoder.layers.1.layer_norm1.bias
 28;False;[2048, 512];text_model.encoder.layers.1.mlp.fc1.weight
 29;False;[2048];text_model.encoder.layers.1.mlp.fc1.bias
 30;False;[512, 2048];text_model.encoder.layers.1.mlp.fc2.weight
 31;False;[512];text_model.encoder.layers.1.mlp.fc2.bias
-32;True;[512];text_model.encoder.layers.1.layer_norm2.weight
-33;True;[512];text_model.encoder.layers.1.layer_norm2.bias
+32;False;[512];text_model.encoder.layers.1.layer_norm2.weight
+33;False;[512];text_model.encoder.layers.1.layer_norm2.bias
 34;False;[512, 512];text_model.encoder.layers.2.self_attn.k_proj.weight
 35;False;[512];text_model.encoder.layers.2.self_attn.k_proj.bias
 36;False;[512, 512];text_model.encoder.layers.2.self_attn.v_proj.weight
@@ -40,14 +40,14 @@
 39;False;[512];text_model.encoder.layers.2.self_attn.q_proj.bias
 40;False;[512, 512];text_model.encoder.layers.2.self_attn.out_proj.weight
 41;False;[512];text_model.encoder.layers.2.self_attn.out_proj.bias
-42;True;[512];text_model.encoder.layers.2.layer_norm1.weight
-43;True;[512];text_model.encoder.layers.2.layer_norm1.bias
+42;False;[512];text_model.encoder.layers.2.layer_norm1.weight
+43;False;[512];text_model.encoder.layers.2.layer_norm1.bias
 44;False;[2048, 512];text_model.encoder.layers.2.mlp.fc1.weight
 45;False;[2048];text_model.encoder.layers.2.mlp.fc1.bias
 46;False;[512, 2048];text_model.encoder.layers.2.mlp.fc2.weight
 47;False;[512];text_model.encoder.layers.2.mlp.fc2.bias
-48;True;[512];text_model.encoder.layers.2.layer_norm2.weight
-49;True;[512];text_model.encoder.layers.2.layer_norm2.bias
+48;False;[512];text_model.encoder.layers.2.layer_norm2.weight
+49;False;[512];text_model.encoder.layers.2.layer_norm2.bias
 50;False;[512, 512];text_model.encoder.layers.3.self_attn.k_proj.weight
 51;False;[512];text_model.encoder.layers.3.self_attn.k_proj.bias
 52;False;[512, 512];text_model.encoder.layers.3.self_attn.v_proj.weight
@@ -56,14 +56,14 @@
 55;False;[512];text_model.encoder.layers.3.self_attn.q_proj.bias
 56;False;[512, 512];text_model.encoder.layers.3.self_attn.out_proj.weight
 57;False;[512];text_model.encoder.layers.3.self_attn.out_proj.bias
-58;True;[512];text_model.encoder.layers.3.layer_norm1.weight
-59;True;[512];text_model.encoder.layers.3.layer_norm1.bias
+58;False;[512];text_model.encoder.layers.3.layer_norm1.weight
+59;False;[512];text_model.encoder.layers.3.layer_norm1.bias
 60;False;[2048, 512];text_model.encoder.layers.3.mlp.fc1.weight
 61;False;[2048];text_model.encoder.layers.3.mlp.fc1.bias
 62;False;[512, 2048];text_model.encoder.layers.3.mlp.fc2.weight
 63;False;[512];text_model.encoder.layers.3.mlp.fc2.bias
-64;True;[512];text_model.encoder.layers.3.layer_norm2.weight
-65;True;[512];text_model.encoder.layers.3.layer_norm2.bias
+64;False;[512];text_model.encoder.layers.3.layer_norm2.weight
+65;False;[512];text_model.encoder.layers.3.layer_norm2.bias
 66;False;[512, 512];text_model.encoder.layers.4.self_attn.k_proj.weight
 67;False;[512];text_model.encoder.layers.4.self_attn.k_proj.bias
 68;False;[512, 512];text_model.encoder.layers.4.self_attn.v_proj.weight
@@ -72,14 +72,14 @@
 71;False;[512];text_model.encoder.layers.4.self_attn.q_proj.bias
 72;False;[512, 512];text_model.encoder.layers.4.self_attn.out_proj.weight
 73;False;[512];text_model.encoder.layers.4.self_attn.out_proj.bias
-74;True;[512];text_model.encoder.layers.4.layer_norm1.weight
-75;True;[512];text_model.encoder.layers.4.layer_norm1.bias
+74;False;[512];text_model.encoder.layers.4.layer_norm1.weight
+75;False;[512];text_model.encoder.layers.4.layer_norm1.bias
 76;False;[2048, 512];text_model.encoder.layers.4.mlp.fc1.weight
 77;False;[2048];text_model.encoder.layers.4.mlp.fc1.bias
 78;False;[512, 2048];text_model.encoder.layers.4.mlp.fc2.weight
 79;False;[512];text_model.encoder.layers.4.mlp.fc2.bias
-80;True;[512];text_model.encoder.layers.4.layer_norm2.weight
-81;True;[512];text_model.encoder.layers.4.layer_norm2.bias
+80;False;[512];text_model.encoder.layers.4.layer_norm2.weight
+81;False;[512];text_model.encoder.layers.4.layer_norm2.bias
 82;False;[512, 512];text_model.encoder.layers.5.self_attn.k_proj.weight
 83;False;[512];text_model.encoder.layers.5.self_attn.k_proj.bias
 84;False;[512, 512];text_model.encoder.layers.5.self_attn.v_proj.weight
@@ -88,14 +88,14 @@
 87;False;[512];text_model.encoder.layers.5.self_attn.q_proj.bias
 88;False;[512, 512];text_model.encoder.layers.5.self_attn.out_proj.weight
 89;False;[512];text_model.encoder.layers.5.self_attn.out_proj.bias
-90;True;[512];text_model.encoder.layers.5.layer_norm1.weight
-91;True;[512];text_model.encoder.layers.5.layer_norm1.bias
+90;False;[512];text_model.encoder.layers.5.layer_norm1.weight
+91;False;[512];text_model.encoder.layers.5.layer_norm1.bias
 92;False;[2048, 512];text_model.encoder.layers.5.mlp.fc1.weight
 93;False;[2048];text_model.encoder.layers.5.mlp.fc1.bias
 94;False;[512, 2048];text_model.encoder.layers.5.mlp.fc2.weight
 95;False;[512];text_model.encoder.layers.5.mlp.fc2.bias
-96;True;[512];text_model.encoder.layers.5.layer_norm2.weight
-97;True;[512];text_model.encoder.layers.5.layer_norm2.bias
+96;False;[512];text_model.encoder.layers.5.layer_norm2.weight
+97;False;[512];text_model.encoder.layers.5.layer_norm2.bias
 98;False;[512, 512];text_model.encoder.layers.6.self_attn.k_proj.weight
 99;False;[512];text_model.encoder.layers.6.self_attn.k_proj.bias
 100;False;[512, 512];text_model.encoder.layers.6.self_attn.v_proj.weight
@@ -104,14 +104,14 @@
 103;False;[512];text_model.encoder.layers.6.self_attn.q_proj.bias
 104;False;[512, 512];text_model.encoder.layers.6.self_attn.out_proj.weight
 105;False;[512];text_model.encoder.layers.6.self_attn.out_proj.bias
-106;True;[512];text_model.encoder.layers.6.layer_norm1.weight
-107;True;[512];text_model.encoder.layers.6.layer_norm1.bias
+106;False;[512];text_model.encoder.layers.6.layer_norm1.weight
+107;False;[512];text_model.encoder.layers.6.layer_norm1.bias
 108;False;[2048, 512];text_model.encoder.layers.6.mlp.fc1.weight
 109;False;[2048];text_model.encoder.layers.6.mlp.fc1.bias
 110;False;[512, 2048];text_model.encoder.layers.6.mlp.fc2.weight
 111;False;[512];text_model.encoder.layers.6.mlp.fc2.bias
-112;True;[512];text_model.encoder.layers.6.layer_norm2.weight
-113;True;[512];text_model.encoder.layers.6.layer_norm2.bias
+112;False;[512];text_model.encoder.layers.6.layer_norm2.weight
+113;False;[512];text_model.encoder.layers.6.layer_norm2.bias
 114;False;[512, 512];text_model.encoder.layers.7.self_attn.k_proj.weight
 115;False;[512];text_model.encoder.layers.7.self_attn.k_proj.bias
 116;False;[512, 512];text_model.encoder.layers.7.self_attn.v_proj.weight
@@ -120,14 +120,14 @@
 119;False;[512];text_model.encoder.layers.7.self_attn.q_proj.bias
 120;False;[512, 512];text_model.encoder.layers.7.self_attn.out_proj.weight
 121;False;[512];text_model.encoder.layers.7.self_attn.out_proj.bias
-122;True;[512];text_model.encoder.layers.7.layer_norm1.weight
-123;True;[512];text_model.encoder.layers.7.layer_norm1.bias
+122;False;[512];text_model.encoder.layers.7.layer_norm1.weight
+123;False;[512];text_model.encoder.layers.7.layer_norm1.bias
 124;False;[2048, 512];text_model.encoder.layers.7.mlp.fc1.weight
 125;False;[2048];text_model.encoder.layers.7.mlp.fc1.bias
 126;False;[512, 2048];text_model.encoder.layers.7.mlp.fc2.weight
 127;False;[512];text_model.encoder.layers.7.mlp.fc2.bias
-128;True;[512];text_model.encoder.layers.7.layer_norm2.weight
-129;True;[512];text_model.encoder.layers.7.layer_norm2.bias
+128;False;[512];text_model.encoder.layers.7.layer_norm2.weight
+129;False;[512];text_model.encoder.layers.7.layer_norm2.bias
 130;False;[512, 512];text_model.encoder.layers.8.self_attn.k_proj.weight
 131;False;[512];text_model.encoder.layers.8.self_attn.k_proj.bias
 132;False;[512, 512];text_model.encoder.layers.8.self_attn.v_proj.weight
@@ -136,14 +136,14 @@
 135;False;[512];text_model.encoder.layers.8.self_attn.q_proj.bias
 136;False;[512, 512];text_model.encoder.layers.8.self_attn.out_proj.weight
 137;False;[512];text_model.encoder.layers.8.self_attn.out_proj.bias
-138;True;[512];text_model.encoder.layers.8.layer_norm1.weight
-139;True;[512];text_model.encoder.layers.8.layer_norm1.bias
+138;False;[512];text_model.encoder.layers.8.layer_norm1.weight
+139;False;[512];text_model.encoder.layers.8.layer_norm1.bias
 140;False;[2048, 512];text_model.encoder.layers.8.mlp.fc1.weight
 141;False;[2048];text_model.encoder.layers.8.mlp.fc1.bias
 142;False;[512, 2048];text_model.encoder.layers.8.mlp.fc2.weight
 143;False;[512];text_model.encoder.layers.8.mlp.fc2.bias
-144;True;[512];text_model.encoder.layers.8.layer_norm2.weight
-145;True;[512];text_model.encoder.layers.8.layer_norm2.bias
+144;False;[512];text_model.encoder.layers.8.layer_norm2.weight
+145;False;[512];text_model.encoder.layers.8.layer_norm2.bias
 146;False;[512, 512];text_model.encoder.layers.9.self_attn.k_proj.weight
 147;False;[512];text_model.encoder.layers.9.self_attn.k_proj.bias
 148;False;[512, 512];text_model.encoder.layers.9.self_attn.v_proj.weight
@@ -152,14 +152,14 @@
 151;False;[512];text_model.encoder.layers.9.self_attn.q_proj.bias
 152;False;[512, 512];text_model.encoder.layers.9.self_attn.out_proj.weight
 153;False;[512];text_model.encoder.layers.9.self_attn.out_proj.bias
-154;True;[512];text_model.encoder.layers.9.layer_norm1.weight
-155;True;[512];text_model.encoder.layers.9.layer_norm1.bias
+154;False;[512];text_model.encoder.layers.9.layer_norm1.weight
+155;False;[512];text_model.encoder.layers.9.layer_norm1.bias
 156;False;[2048, 512];text_model.encoder.layers.9.mlp.fc1.weight
 157;False;[2048];text_model.encoder.layers.9.mlp.fc1.bias
 158;False;[512, 2048];text_model.encoder.layers.9.mlp.fc2.weight
 159;False;[512];text_model.encoder.layers.9.mlp.fc2.bias
-160;True;[512];text_model.encoder.layers.9.layer_norm2.weight
-161;True;[512];text_model.encoder.layers.9.layer_norm2.bias
+160;False;[512];text_model.encoder.layers.9.layer_norm2.weight
+161;False;[512];text_model.encoder.layers.9.layer_norm2.bias
 162;False;[512, 512];text_model.encoder.layers.10.self_attn.k_proj.weight
 163;False;[512];text_model.encoder.layers.10.self_attn.k_proj.bias
 164;False;[512, 512];text_model.encoder.layers.10.self_attn.v_proj.weight
@@ -168,14 +168,14 @@
 167;False;[512];text_model.encoder.layers.10.self_attn.q_proj.bias
 168;False;[512, 512];text_model.encoder.layers.10.self_attn.out_proj.weight
 169;False;[512];text_model.encoder.layers.10.self_attn.out_proj.bias
-170;True;[512];text_model.encoder.layers.10.layer_norm1.weight
-171;True;[512];text_model.encoder.layers.10.layer_norm1.bias
+170;False;[512];text_model.encoder.layers.10.layer_norm1.weight
+171;False;[512];text_model.encoder.layers.10.layer_norm1.bias
 172;False;[2048, 512];text_model.encoder.layers.10.mlp.fc1.weight
 173;False;[2048];text_model.encoder.layers.10.mlp.fc1.bias
 174;False;[512, 2048];text_model.encoder.layers.10.mlp.fc2.weight
 175;False;[512];text_model.encoder.layers.10.mlp.fc2.bias
-176;True;[512];text_model.encoder.layers.10.layer_norm2.weight
-177;True;[512];text_model.encoder.layers.10.layer_norm2.bias
+176;False;[512];text_model.encoder.layers.10.layer_norm2.weight
+177;False;[512];text_model.encoder.layers.10.layer_norm2.bias
 178;False;[512, 512];text_model.encoder.layers.11.self_attn.k_proj.weight
 179;False;[512];text_model.encoder.layers.11.self_attn.k_proj.bias
 180;False;[512, 512];text_model.encoder.layers.11.self_attn.v_proj.weight
@@ -184,13 +184,13 @@
 183;False;[512];text_model.encoder.layers.11.self_attn.q_proj.bias
 184;False;[512, 512];text_model.encoder.layers.11.self_attn.out_proj.weight
 185;False;[512];text_model.encoder.layers.11.self_attn.out_proj.bias
-186;True;[512];text_model.encoder.layers.11.layer_norm1.weight
-187;True;[512];text_model.encoder.layers.11.layer_norm1.bias
+186;False;[512];text_model.encoder.layers.11.layer_norm1.weight
+187;False;[512];text_model.encoder.layers.11.layer_norm1.bias
 188;False;[2048, 512];text_model.encoder.layers.11.mlp.fc1.weight
 189;False;[2048];text_model.encoder.layers.11.mlp.fc1.bias
 190;False;[512, 2048];text_model.encoder.layers.11.mlp.fc2.weight
 191;False;[512];text_model.encoder.layers.11.mlp.fc2.bias
-192;True;[512];text_model.encoder.layers.11.layer_norm2.weight
-193;True;[512];text_model.encoder.layers.11.layer_norm2.bias
-194;True;[512];text_model.final_layer_norm.weight
-195;True;[512];text_model.final_layer_norm.bias
+192;False;[512];text_model.encoder.layers.11.layer_norm2.weight
+193;False;[512];text_model.encoder.layers.11.layer_norm2.bias
+194;False;[512];text_model.final_layer_norm.weight
+195;False;[512];text_model.final_layer_norm.bias

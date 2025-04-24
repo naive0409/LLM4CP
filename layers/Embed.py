@@ -185,6 +185,36 @@ class PatchEmbedding(nn.Module):
         return self.dropout(x), n_vars
 
 
+class Patching(nn.Module):
+    def __init__(self, d_model, patch_len, stride, dropout):
+        super(Patching, self).__init__()
+        # Patching
+        self.patch_len = patch_len
+        self.stride = stride
+        self.padding_patch_layer = ReplicationPad1d((0, stride))
+
+        # Backbone, Input encoding: projection of feature vectors onto a d-dim vector space
+        # self.value_embedding = TokenEmbedding(patch_len, d_model)
+
+        # Positional embedding
+        # self.position_embedding = PositionalEmbedding(d_model)
+
+        # Residual dropout
+        # self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        # do patching
+        n_vars = x.shape[1]
+        x = self.padding_patch_layer(x)
+        x = x.unfold(dimension=-1, size=self.patch_len, step=self.stride)  # batch size, n_vars(96), 8,patch_len
+        # x = torch.reshape(x, (x.shape[0] * x.shape[1], x.shape[2], x.shape[3]))
+        x = torch.reshape(x, (x.shape[0], 2, x.shape[2] * x.shape[3], -1))
+        # Input encoding
+        # x = self.value_embedding(x)
+        # return self.dropout(x), n_vars
+        return x, n_vars
+
+
 class DataEmbedding_wo_time(nn.Module):
     def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):
         super(DataEmbedding_wo_time, self).__init__()

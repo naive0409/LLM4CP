@@ -14,11 +14,13 @@ from torch.utils.tensorboard import SummaryWriter
 from metrics import NMSELoss, SE_Loss
 import pickle
 import datetime
+from torchsummary import summary
+
 
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 8 #256
+batch_size = 64 #256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
@@ -177,6 +179,33 @@ def train(training_data_loader, validate_data_loader):
                 save_best_checkpoint(model)
 
 
+def print_model_structure(model, indent=0, file=None):
+    """递归打印模型结构并写入文件"""
+    for name, module in model.named_children():
+        # 获取当前层的直接参数（不递归子层）
+        params = list(module.parameters(recurse=False))
+        num_params = sum(p.numel() for p in params)
+
+        # 格式化参数量和冻结状态
+        params_str = ""
+        if num_params > 0:
+            num_params_m = num_params / 1e6
+            params_str = f", Params: {num_params_m:.2f}M"
+            # 判断是否所有参数均被冻结
+            is_frozen = all(not p.requires_grad for p in params)
+            if is_frozen:
+                params_str += " (Frozen)"
+
+        # 构建输出行
+        line = ' ' * indent + f"({name}): {module.__class__.__name__}{params_str}"
+        # print(line)  # 控制台输出
+        if file:
+            file.write(line + '\n')  # 写入文件
+
+        # 递归遍历子层
+        if list(module.children()):
+            print_model_structure(module, indent + 4, file)
+
 ###################################################################
 # ------------------- Main Function (Run first) -------------------
 ###################################################################
@@ -185,6 +214,9 @@ if __name__ == "__main__":
     print("Number of parameter: %.5fM" % (total / 1e6))
     total_learn = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("Number of learnable parameter: %.5fM" % (total_learn / 1e6))
+
+    with open("./code_testing/structure_model.txt", "w") as f:
+        print_model_structure(model, file=f)
 
     training_data_loader = DataLoader(dataset=train_set, num_workers=0, batch_size=batch_size, shuffle=True,
                                       pin_memory=True,
