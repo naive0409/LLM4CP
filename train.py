@@ -20,7 +20,7 @@ from torchsummary import summary
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 512 #256
+batch_size = 8 #256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
@@ -190,7 +190,7 @@ def print_model_structure(model, indent=0, file=None):
         params_str = ""
         if num_params > 0:
             num_params_m = num_params / 1e6
-            params_str = f", Params: {num_params_m:.2f}M"
+            params_str = f", Params: {num_params_m:.6f}M"
             # 判断是否所有参数均被冻结
             is_frozen = all(not p.requires_grad for p in params)
             if is_frozen:
