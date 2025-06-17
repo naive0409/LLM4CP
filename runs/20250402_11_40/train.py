@@ -18,9 +18,9 @@ from torchsummary import summary
 
 
 # ============= HYPER PARAMS(Pre-Defined) ==========#
-lr = 0.0001
+lr = 0.001
 epochs = 500
-batch_size = 512 #256
+batch_size = 128 #256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100

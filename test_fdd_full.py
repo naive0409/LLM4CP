@@ -26,7 +26,7 @@ if __name__ == "__main__":
     prev_path = "./Testing Dataset/H_U_his_test.mat"
     pred_path = "./Testing Dataset/H_U_pre_test.mat"
     pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
-    date_ = '20250412_20_46'
+    date_ = '20250507_17_42'
     model_path = {
         'clip': 'Weights/full_shot_fdd/{}/clip.pth'.format(date_),
         'gpt': './Weights/full_shot_fdd/U2D_LLM4CP.pth',
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                         model.eval()
                     prev_data = LoadBatch_ofdm_2(test_data_prev)
                     pred_data = LoadBatch_ofdm_2(test_data_pred)
-                    bs = 16
+                    bs = 64
                     cycle_times = lens // bs
                     pth = 'code_testing/csi_output/{}'.format(date_)
                     try:

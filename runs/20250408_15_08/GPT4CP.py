@@ -57,9 +57,9 @@ class Res_block(nn.Module):
 class Model(nn.Module):
     model_list = ["gpt2", "clip", "clip_vision", "clip_text"]
 
-    # def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
+    def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
     # def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # done clip vision
-    def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # done gpt2
+    # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # done gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=4, stride=2, res_dim=64,
@@ -349,9 +349,9 @@ class Model(nn.Module):
         # dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
         # dec_out = self.gpt2(pixel_values=enc_out)  # done clip
         # dec_out = self.gpt2(input_ids=clip_enc_out)  # done clip text
-        # dec_out = self.gpt2(input_ids=enc_out)  # done clip text
+        dec_out = self.gpt2(input_ids=enc_out)  # done clip text
         # dec_out = self.gpt2(pixel_values=enc_out)  # done clip vision
-        dec_out = self.gpt2(inputs_embeds=enc_out)#.last_hidden_state  # done gpt2 [B , L, 768]
+        # dec_out = self.gpt2(inputs_embeds=enc_out).last_hidden_state  # done gpt2 [B , L, 768]
         # clip_loss = dec_out.loss
 
         # todo clip输出处理

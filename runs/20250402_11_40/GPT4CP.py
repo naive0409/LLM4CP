@@ -57,12 +57,12 @@ class Res_block(nn.Module):
 class Model(nn.Module):
     model_list = ["gpt2", "clip", "clip_vision", "clip_text"]
 
-    # def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
+    def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
     # def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # done clip vision
-    def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # done gpt2
+    # def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # done gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
-                 patch_size=4, stride=2, res_dim=64,
+                 patch_size=8, stride=4, res_dim=64,
                  embed='timeF', freq='h', dropout=0.1):
         super(Model, self).__init__()
         self.mlp = mlp
@@ -89,7 +89,7 @@ class Model(nn.Module):
         self.enc_in = K * UQh * UQv * BQh * BQv
         self.c_out = K * UQh * UQv * BQh * BQv
 
-        self.enc_embedding1 = DataEmbedding(2 * self.enc_in, self.d_model, embed, freq, dropout)
+        # self.enc_embedding1 = DataEmbedding(2 * self.enc_in, self.d_model, embed, freq, dropout)
         # self.enc_embedding2 = VisionEmbedding(image_size=[self.prev_len, 2 * self.enc_in], patch_size=self.patch_size)
 
 
@@ -202,17 +202,16 @@ class Model(nn.Module):
         self.patch_nums = int((self.seq_len - self.patch_size) / self.stride + 2)
         self.head_nf = self.d_ff * self.patch_nums
         # self.output_projection = FlattenHead(self.enc_in_, self.head_nf, self.pred_len, head_dropout=dropout)
-        # self.output_projection = FlattenHead(self.enc_in_, self.head_nf, 96, head_dropout=dropout)
+        self.output_projection = FlattenHead(self.enc_in_, self.head_nf, 96, head_dropout=dropout)
         # self.normalize_layers = Normalize(self.enc_in_, affine=False)
 
-        self.patch_layer = nn.Linear(self.patch_size, self.patch_size)
+        # self.patch_layer = nn.Linear(self.patch_size, self.patch_size)
         # self.patch_layer_fre = nn.Linear(self.patch_size, self.patch_size)
-        self.final_dim = int((self.prev_len - self.patch_size) / self.stride + 1) * self.patch_size
         # self.predict_linear_pre = nn.Linear(self.prev_len, self.prev_len)
-        self.predict_linear_pre = nn.Linear(self.final_dim, self.final_dim)
         # self.vision_features = 1 + int(2 * self.enc_in * self.prev_len // (self.patch_size ** 2))
-        # self.output_layer_time = nn.Linear(self.prev_len, self.pred_len)
-        # self.output_layer_time = nn.Linear(self.final_dim, self.pred_len)
+        # self.out_layer_dim = nn.Linear(d_ff, 4)
+        # self.out_layer_dim_2 = nn.Linear(self.patch_nums * 4, self.enc_in * 2)
+        self.output_layer_time = nn.Linear(self.prev_len, self.pred_len)
 
         '''
         self.vision_features是用kernel_size=patch_size,stride=patch_size的conv2d层
@@ -225,17 +224,14 @@ class Model(nn.Module):
         self.down_layer_vision_dim = nn.Linear(768, 512)
         self.down_layer_vision_time = nn.Linear(self.vision_features, self.prev_len)
         '''
-        # '''
-        # clip的vision输出为[8, 97, 768]，需要变换到[8, 16, 512]，和text输出相同
-        # 先下降dim再下降time
-        self.out_layer_dim = nn.Linear(self.d_ff, self.c_out * 2)
-        # self.output_layer_time = nn.Sequential(
-        #     nn.Linear(self.prev_len, self.pred_len)
-        # )
-        self.output_layer_time = nn.Linear(self.final_dim, self.pred_len)
+        '''
+        clip的vision输出为[8, 97, 768]，需要变换到[8, 16, 512]，和text输出相同
+        先下降dim再下降time
+        self.out_layer_dim = nn.Linear(d_ff, self.c_out * 2)
+        self.output_layer_time = nn.Sequential(
+            nn.Linear(self.prev_len, self.pred_len)
+        )
 
-        # '''
-        # '''
         self.RB_e = nn.Sequential(nn.Conv2d(2, res_dim, 3, 1, 1))
         self.RB_f = nn.Sequential(nn.Conv2d(2, res_dim, 3, 1, 1))
         for i in range(self.res_layers):
@@ -243,11 +239,11 @@ class Model(nn.Module):
             self.RB_f.append(Res_block(res_dim))
         self.RB_e.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
         self.RB_f.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
-        # '''
+        '''
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
 
-        # x_enc = x_enc.permute(0, 2, 1)
+        x_enc = x_enc.permute(0, 2, 1)
         # timellm里的顺序是batch_size\Time Steps\number of features，这里先调换过来
 
         # x_enc = self.normalize_layers(x_enc, 'norm')
@@ -260,7 +256,7 @@ class Model(nn.Module):
 
         B, L, enc_in = x_enc.shape  # [B, L, D]  x_enc:torch.Size([1024, 16, 96])
         # B T N -> B * N , T , 1
-        # x_enc = x_enc.permute(0, 2, 1).contiguous().reshape(B * enc_in, L, 1)
+        x_enc = x_enc.permute(0, 2, 1).contiguous().reshape(B * enc_in, L, 1)
 
         # min_values = torch.min(x_enc, dim=1)[0]
         # max_values = torch.max(x_enc, dim=1)[0]
@@ -294,37 +290,32 @@ class Model(nn.Module):
 
         # source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0)).permute(1, 0)
 
-        # x_enc = x_enc.permute(0, 2, 1).contiguous()
+        x_enc = x_enc.permute(0, 2, 1).contiguous()
         # x_enc = x_enc.to(torch.bfloat16)  # 临时加的
-        # enc_out, n_vars = self.patch_embedding(x_enc)  # todo bfloat16?
+        enc_out, n_vars = self.patch_embedding(x_enc)  # todo bfloat16?
         # enc_out, n_vars = self.patch_embedding(x_enc.to(torch.bfloat16))
         # enc_out = self.reprogramming_layer(enc_out, source_embeddings, source_embeddings)
         # llama_enc_out = torch.cat([prompt_embeddings, enc_out], dim=1)
         # dec_out = self.llm_model(inputs_embeds=llama_enc_out).last_hidden_state
 
         # clip_enc_out = torch.cat([prompt_embeddings, enc_out], dim=1)
-        # enc_out = self.RB_e(enc_out)  # torch.Size([1024, 2, 16, 48])
-        # clip_enc_out = enc_out
+        clip_enc_out = enc_out
 
-        # '''
+        '''
         # process in delay domain
         x_enc_r = rearrange(x_enc, 'b l (k o) -> b l k o', o=2)  # torch.Size([1024, 16, 48, 2])
         x_enc_complex = torch.complex(x_enc_r[:, :, :, 0], x_enc_r[:, :, :, 1])  # torch.Size([1024, 16, 48])
         x_enc_delay = torch.fft.ifft(x_enc_complex, dim=2)  # torch.Size([1024, 16, 48])
         x_enc_delay = torch.cat([torch.real(x_enc_delay), torch.imag(x_enc_delay)], dim=2)  # torch.Size([1024, 16, 96])
-        # x_enc_delay = x_enc_delay.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
-        x_enc_delay = x_enc_delay.unfold(dimension=-2, size=self.patch_size, step=self.stride)
-        x_enc_delay = x_enc_delay.permute(0, 1, 3, 2)
+        x_enc_delay = x_enc_delay.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
         x_enc_delay = self.patch_layer(x_enc_delay.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)  # torch.Size([1024, 4, 4, 96])
-        x_enc_delay = x_enc_delay.reshape(B, -1, enc_in)  # torch.Size([1024, 16, 96])
+        x_enc_delay = x_enc_delay.reshape(B, L, enc_in)  # torch.Size([1024, 16, 96])
         x_enc_delay = rearrange(x_enc_delay, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
         x_enc_delay = self.RB_f(x_enc_delay)  # torch.Size([1024, 2, 16, 48])
         # process in frequency domain
-        # x_enc_fre = x_enc.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
-        x_enc_fre = x_enc.unfold(dimension=-2, size=self.patch_size, step=self.stride)
-        x_enc_fre = x_enc_fre.permute(0, 1, 3, 2)
+        x_enc_fre = x_enc.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
         x_enc_fre = self.patch_layer(x_enc_fre.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)  # torch.Size([1024, 4, 4, 96])
-        x_enc_fre = x_enc_fre.reshape(B, -1, enc_in)  # torch.Size([1024, 16, 96])
+        x_enc_fre = x_enc_fre.reshape(B, L, enc_in)  # torch.Size([1024, 16, 96])
         x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
         x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
 
@@ -344,14 +335,14 @@ class Model(nn.Module):
 
         enc_out = self.predict_linear_pre(enc_out.permute(0, 2, 1)).permute(0, 2, 1)
         # enc_out = torch.nn.functional.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))
-        # '''
+        '''
 
         # dec_out = self.gpt2(input_ids=x_enc_fre, pixel_values=x_enc_delay, return_loss=True)
         # dec_out = self.gpt2(pixel_values=enc_out)  # done clip
-        # dec_out = self.gpt2(input_ids=clip_enc_out)  # done clip text
+        dec_out = self.gpt2(input_ids=clip_enc_out)  # done clip text
         # dec_out = self.gpt2(input_ids=enc_out)  # done clip text
         # dec_out = self.gpt2(pixel_values=enc_out)  # done clip vision
-        dec_out = self.gpt2(inputs_embeds=enc_out)#.last_hidden_state  # done gpt2 [B , L, 768]
+        # dec_out = self.gpt2(inputs_embeds=enc_out).last_hidden_state  # done gpt2 [B , L, 768]
         # clip_loss = dec_out.loss
 
         # todo clip输出处理
@@ -364,13 +355,13 @@ class Model(nn.Module):
         # dec_out_vision = self.down_layer_vision_time(dec_out_vision.permute(0, 2, 1)).permute(0, 2, 1)
 
         # dec_out = dec_out_vision + dec_out_text
-        # '''
-        dec_out = self.out_layer_dim(dec_out)
-        dec_out = self.output_layer_time(dec_out.permute(0, 2, 1)).permute(0, 2, 1)
+        '''
+        # dec_out = self.out_layer_dim(dec_out)
+        # dec_out = self.output_layer_time(dec_out.permute(0, 2, 1)).permute(0, 2, 1)
 
-        dec_out = dec_out * std + mean
-        # '''
-        return dec_out[:, -self.pred_len:, :]  # [B, L, D]
+        # dec_out = dec_out * std + mean
+        '''
+        # return clip_loss, dec_out[:, -self.pred_len:, :]  # [B, L, D]
 
         # dec_out = torch.reshape(dec_out, (-1, n_vars, dec_out.shape[-2], dec_out.shape[-1]))
         dec_out = torch.reshape(dec_out, (-1, 16, dec_out.shape[-2], dec_out.shape[-1]))
