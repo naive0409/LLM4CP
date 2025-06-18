@@ -59,7 +59,7 @@ if __name__ == "__main__":
         print("loading ", i + 1, "th model......", model_test_enable[i])
         if model_test_enable[i] not in ['pad', 'pvec', 'np']:
             model = torch.load(model_path[model_test_enable[i]], map_location=device).to(device)
-        for snr in [5 * x for x in range(9)]:  # 0,5,...,40
+        for snr in [5 * x for x in range(6)]:  # 0,5,...,25
             for speed in range(0, 1):
                 test_loss_stack = []
                 test_loss_stack_se = []
