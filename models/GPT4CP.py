@@ -54,6 +54,101 @@ class Res_block(nn.Module):
         return rs
 
 
+class MmFF_block(nn.Module):
+    """
+    多模态特征融合块(Multi-modal Feature Fusion Block)类定义。
+
+    该块旨在处理来自不同模态的数据，并可选择性地将它们融合在一起。
+    主要通过并行的Res_block对每个模态的数据进行处理，然后根据融合标志(fusion_flag)
+    决定是否将辅助模态的特征加到主模态(下标为0)上。
+
+    参数:
+    - res_dim (int): 输入到每个Res_block的维度。
+    - modality_num (int, optional): 模态的数量，默认为2。
+    - fusion_flag (bool, optional): 是否进行特征融合，默认为True。
+    """
+    def __init__(self, res_dim: int, modality_num: int = 2, fusion_flag: bool = True):
+        super(MmFF_block, self).__init__()
+
+        self.modality_num = modality_num
+        self.res_dim = res_dim
+        self.fusion_flag = fusion_flag
+        # 有多少模态就有多少并行的Res_block
+        # Res_block_list[0]是主模态
+        self.Res_block_list = nn.ModuleList([Res_block(in_planes=self.res_dim) for _ in range(self.modality_num)])
+
+    def forward(self, x: tuple) -> list:
+        x = list(x)
+        assert len(x) == self.modality_num, "模态数量错误"
+
+        for modality_i in range(self.modality_num):
+            x[modality_i] = self.Res_block_list[modality_i](x[modality_i])
+
+        if self.fusion_flag:
+            for modality_j in range(self.modality_num):
+                if modality_j != 0:
+                    x[0] = torch.add(x[0], x[modality_j])
+        return x
+
+
+class MmHFF(nn.Module):
+    """
+    多模态多层次融合(Multi-modal Hierarchical Feature Fusion, MmHFF)类
+
+    参数:
+    - res_dim (int): 特征维度的大小，用于配置输入卷积层inConv2d_list和输出卷积层outConv2d_list
+    - modality_num (int, 可选): 模态的数量，默认为2
+    - fusion_flag_list (list, 可选): 融合标志列表，默认为[False, True, False, True]
+
+    此构造函数初始化了MmHFF类，设置了模态数量、特征维度和融合标志列表，
+    并创建了输入卷积层、输出卷积层和多模态融合块的序列。
+    """
+    def __init__(self, res_dim: int, modality_num: int = 2, fusion_flag_list: list = None):
+        super(MmHFF, self).__init__()
+
+        if fusion_flag_list is None:
+            fusion_flag_list = [False, True, False, True]
+        self.modality_num = modality_num
+        self.res_dim = res_dim
+        self.fusion_flag_list = fusion_flag_list
+        self.MmFF_block_layers = len(self.fusion_flag_list)
+
+        self.inConv2d_list = nn.ModuleList([nn.Conv2d(in_channels=2,
+                                                      out_channels=res_dim,
+                                                      kernel_size=3,
+                                                      stride=1,
+                                                      padding=1)
+                                            for _ in range(self.modality_num)])
+        self.outConv2d_list = nn.ModuleList([nn.Conv2d(in_channels=res_dim,
+                                                       out_channels=2,
+                                                       kernel_size=3,
+                                                       stride=1,
+                                                       padding=1)
+                                             for _ in range(self.modality_num)])
+        self.MmFF_block_list = nn.Sequential()
+        for i in range(self.MmFF_block_layers):
+            self.MmFF_block_list.add_module(f"MmFF_block_{i}",
+                                            MmFF_block(res_dim=self.res_dim,
+                                                       modality_num=self.modality_num,
+                                                       fusion_flag=self.fusion_flag_list[i]))
+
+    def forward(self, x: tuple) -> torch.Tensor:
+        x = list(x)
+        assert len(x) == self.modality_num, "模态数量错误"
+        for modality_i in range(self.modality_num):
+            x[modality_i] = self.inConv2d_list[modality_i](x[modality_i])
+
+        x = self.MmFF_block_list(x)
+
+        for modality_i in range(self.modality_num):
+            x[modality_i] = self.outConv2d_list[modality_i](x[modality_i])
+
+        for modality_i in range(self.modality_num):
+            if modality_i != 0:
+                x[0] = torch.add(x[0], x[modality_i])
+        return x[0]
+
+
 class Model(nn.Module):
     model_list = ["gpt2", "clip", "clip_vision", "clip_text"]
 
@@ -236,14 +331,16 @@ class Model(nn.Module):
 
         # '''
         # '''
-        self.RB_e = nn.Sequential(nn.Conv2d(2, res_dim, 3, 1, 1))
-        self.RB_f = nn.Sequential(nn.Conv2d(2, res_dim, 3, 1, 1))
-        for i in range(self.res_layers):
-            self.RB_e.append(Res_block(res_dim))
-            self.RB_f.append(Res_block(res_dim))
-        self.RB_e.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
-        self.RB_f.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
+        # self.RB_e = nn.Sequential(nn.Conv2d(2, res_dim, 3, 1, 1))
+        # self.RB_f = nn.Sequential(nn.Conv2d(2, res_dim, 3, 1, 1))
+        # for i in range(self.res_layers):
+        #     self.RB_e.append(Res_block(res_dim))
+        #     self.RB_f.append(Res_block(res_dim))
+        # self.RB_e.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
+        # self.RB_f.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
         # '''
+
+        self.MmHFF = MmHFF(res_dim=res_dim, modality_num=2, fusion_flag_list=[False, True, True, True])
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
 
@@ -318,7 +415,7 @@ class Model(nn.Module):
         x_enc_delay = self.patch_layer(x_enc_delay.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)  # torch.Size([1024, 4, 4, 96])
         x_enc_delay = x_enc_delay.reshape(B, -1, enc_in)  # torch.Size([1024, 16, 96])
         x_enc_delay = rearrange(x_enc_delay, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
-        x_enc_delay = self.RB_f(x_enc_delay)  # torch.Size([1024, 2, 16, 48])
+        # x_enc_delay = self.RB_f(x_enc_delay)  # torch.Size([1024, 2, 16, 48])
         # process in frequency domain
         # x_enc_fre = x_enc.reshape(B, L // self.patch_size, self.patch_size, enc_in)  # torch.Size([1024, 4, 4, 96])
         x_enc_fre = x_enc.unfold(dimension=-2, size=self.patch_size, step=self.stride)
@@ -326,9 +423,13 @@ class Model(nn.Module):
         x_enc_fre = self.patch_layer(x_enc_fre.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)  # torch.Size([1024, 4, 4, 96])
         x_enc_fre = x_enc_fre.reshape(B, -1, enc_in)  # torch.Size([1024, 16, 96])
         x_enc_fre = rearrange(x_enc_fre, 'b l (k o) -> b o l k', o=2)  # torch.Size([1024, 2, 16, 48])
-        x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
+        # x_enc_fre = self.RB_e(x_enc_fre)  # torch.Size([1024, 2, 16, 48])
 
-        x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
+        # x_enc = x_enc_fre + x_enc_delay  # torch.Size([1024, 2, 16, 48])
+        x_enc = (x_enc_fre, x_enc_delay)
+
+        x_enc = self.MmHFF(x_enc)
+
         x_enc = rearrange(x_enc, 'b o l k -> b l (k o)', o=2)  # [B, L, D] torch.Size([1024, 16, 96])
 
         enc_out = self.enc_embedding1(x_enc, x_mark_enc)  # [B, L, 768] torch.Size([1024, 16, 768])
