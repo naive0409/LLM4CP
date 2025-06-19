@@ -340,7 +340,7 @@ class Model(nn.Module):
         # self.RB_f.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
         # '''
 
-        self.MmHFF = MmHFF(res_dim=res_dim, modality_num=2, fusion_flag_list=[False, True, True, True])
+        self.MmHFF = MmHFF(res_dim=res_dim, modality_num=2, fusion_flag_list=[False, True, False, True])
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
 

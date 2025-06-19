@@ -1,194 +1,204 @@
 (enc_embedding1): DataEmbedding
     (value_embedding): TokenEmbedding
-        (tokenConv): Conv1d, Params: 0.22M
+        (tokenConv): Conv1d, Params: 0.221184M
     (position_embedding): PositionalEmbedding
     (temporal_embedding): TimeFeatureEmbedding
-        (embed): Linear, Params: 0.00M
+        (embed): Linear, Params: 0.003072M
     (dropout): Dropout
 (gpt2): GPT2Model
-    (wte): Embedding, Params: 38.60M (Frozen)
-    (wpe): Embedding, Params: 0.79M
+    (wte): Embedding, Params: 38.597376M (Frozen)
+    (wpe): Embedding, Params: 0.786432M
     (drop): Dropout
     (h): ModuleList
         (0): GPT2Block
-            (ln_1): LayerNorm, Params: 0.00M
+            (ln_1): LayerNorm, Params: 0.001536M
             (attn): GPT2Attention
-                (c_attn): Conv1D, Params: 1.77M (Frozen)
-                (c_proj): Conv1D, Params: 0.59M (Frozen)
+                (c_attn): Conv1D, Params: 1.771776M (Frozen)
+                (c_proj): Conv1D, Params: 0.590592M (Frozen)
                 (attn_dropout): Dropout
                 (resid_dropout): Dropout
-            (ln_2): LayerNorm, Params: 0.00M
+            (ln_2): LayerNorm, Params: 0.001536M
             (mlp): GPT2MLP
-                (c_fc): Conv1D, Params: 2.36M (Frozen)
-                (c_proj): Conv1D, Params: 2.36M (Frozen)
+                (c_fc): Conv1D, Params: 2.362368M (Frozen)
+                (c_proj): Conv1D, Params: 2.360064M (Frozen)
                 (act): NewGELUActivation
                 (dropout): Dropout
         (1): GPT2Block
-            (ln_1): LayerNorm, Params: 0.00M
+            (ln_1): LayerNorm, Params: 0.001536M
             (attn): GPT2Attention
-                (c_attn): Conv1D, Params: 1.77M (Frozen)
-                (c_proj): Conv1D, Params: 0.59M (Frozen)
+                (c_attn): Conv1D, Params: 1.771776M (Frozen)
+                (c_proj): Conv1D, Params: 0.590592M (Frozen)
                 (attn_dropout): Dropout
                 (resid_dropout): Dropout
-            (ln_2): LayerNorm, Params: 0.00M
+            (ln_2): LayerNorm, Params: 0.001536M
             (mlp): GPT2MLP
-                (c_fc): Conv1D, Params: 2.36M (Frozen)
-                (c_proj): Conv1D, Params: 2.36M (Frozen)
+                (c_fc): Conv1D, Params: 2.362368M (Frozen)
+                (c_proj): Conv1D, Params: 2.360064M (Frozen)
                 (act): NewGELUActivation
                 (dropout): Dropout
         (2): GPT2Block
-            (ln_1): LayerNorm, Params: 0.00M
+            (ln_1): LayerNorm, Params: 0.001536M
             (attn): GPT2Attention
-                (c_attn): Conv1D, Params: 1.77M (Frozen)
-                (c_proj): Conv1D, Params: 0.59M (Frozen)
+                (c_attn): Conv1D, Params: 1.771776M (Frozen)
+                (c_proj): Conv1D, Params: 0.590592M (Frozen)
                 (attn_dropout): Dropout
                 (resid_dropout): Dropout
-            (ln_2): LayerNorm, Params: 0.00M
+            (ln_2): LayerNorm, Params: 0.001536M
             (mlp): GPT2MLP
-                (c_fc): Conv1D, Params: 2.36M (Frozen)
-                (c_proj): Conv1D, Params: 2.36M (Frozen)
+                (c_fc): Conv1D, Params: 2.362368M (Frozen)
+                (c_proj): Conv1D, Params: 2.360064M (Frozen)
                 (act): NewGELUActivation
                 (dropout): Dropout
         (3): GPT2Block
-            (ln_1): LayerNorm, Params: 0.00M
+            (ln_1): LayerNorm, Params: 0.001536M
             (attn): GPT2Attention
-                (c_attn): Conv1D, Params: 1.77M (Frozen)
-                (c_proj): Conv1D, Params: 0.59M (Frozen)
+                (c_attn): Conv1D, Params: 1.771776M (Frozen)
+                (c_proj): Conv1D, Params: 0.590592M (Frozen)
                 (attn_dropout): Dropout
                 (resid_dropout): Dropout
-            (ln_2): LayerNorm, Params: 0.00M
+            (ln_2): LayerNorm, Params: 0.001536M
             (mlp): GPT2MLP
-                (c_fc): Conv1D, Params: 2.36M (Frozen)
-                (c_proj): Conv1D, Params: 2.36M (Frozen)
+                (c_fc): Conv1D, Params: 2.362368M (Frozen)
+                (c_proj): Conv1D, Params: 2.360064M (Frozen)
                 (act): NewGELUActivation
                 (dropout): Dropout
         (4): GPT2Block
-            (ln_1): LayerNorm, Params: 0.00M
+            (ln_1): LayerNorm, Params: 0.001536M
             (attn): GPT2Attention
-                (c_attn): Conv1D, Params: 1.77M (Frozen)
-                (c_proj): Conv1D, Params: 0.59M (Frozen)
+                (c_attn): Conv1D, Params: 1.771776M (Frozen)
+                (c_proj): Conv1D, Params: 0.590592M (Frozen)
                 (attn_dropout): Dropout
                 (resid_dropout): Dropout
-            (ln_2): LayerNorm, Params: 0.00M
+            (ln_2): LayerNorm, Params: 0.001536M
             (mlp): GPT2MLP
-                (c_fc): Conv1D, Params: 2.36M (Frozen)
-                (c_proj): Conv1D, Params: 2.36M (Frozen)
+                (c_fc): Conv1D, Params: 2.362368M (Frozen)
+                (c_proj): Conv1D, Params: 2.360064M (Frozen)
                 (act): NewGELUActivation
                 (dropout): Dropout
         (5): GPT2Block
-            (ln_1): LayerNorm, Params: 0.00M
+            (ln_1): LayerNorm, Params: 0.001536M
             (attn): GPT2Attention
-                (c_attn): Conv1D, Params: 1.77M (Frozen)
-                (c_proj): Conv1D, Params: 0.59M (Frozen)
+                (c_attn): Conv1D, Params: 1.771776M (Frozen)
+                (c_proj): Conv1D, Params: 0.590592M (Frozen)
                 (attn_dropout): Dropout
                 (resid_dropout): Dropout
-            (ln_2): LayerNorm, Params: 0.00M
+            (ln_2): LayerNorm, Params: 0.001536M
             (mlp): GPT2MLP
-                (c_fc): Conv1D, Params: 2.36M (Frozen)
-                (c_proj): Conv1D, Params: 2.36M (Frozen)
+                (c_fc): Conv1D, Params: 2.362368M (Frozen)
+                (c_proj): Conv1D, Params: 2.360064M (Frozen)
                 (act): NewGELUActivation
                 (dropout): Dropout
-    (ln_f): LayerNorm, Params: 0.00M
+    (ln_f): LayerNorm, Params: 0.001536M
 (patch_embedding): PatchEmbedding
     (padding_patch_layer): ReplicationPad1d
     (value_embedding): TokenEmbedding
-        (tokenConv): Conv1d, Params: 0.01M
+        (tokenConv): Conv1d, Params: 0.009216M
     (dropout): Dropout
-(patch_layer): Linear, Params: 0.00M
-(predict_linear_pre): Linear, Params: 0.00M
-(out_layer_dim): Linear, Params: 0.07M
-(output_layer_time): Linear, Params: 0.00M
-(RB_e): Sequential
-    (0): Conv2d, Params: 0.00M
-    (1): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (2): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (3): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (4): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (5): Conv2d, Params: 0.00M
-(RB_f): Sequential
-    (0): Conv2d, Params: 0.00M
-    (1): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (2): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (3): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (4): Res_block
-        (conv1): Conv2d, Params: 0.04M
-        (conv2): Conv2d, Params: 0.04M
-        (ca): ChannelAttention
-            (avg_pool): AdaptiveAvgPool2d
-            (max_pool): AdaptiveMaxPool2d
-            (fc1): Conv2d, Params: 0.00M
-            (relu1): ReLU
-            (fc2): Conv2d, Params: 0.00M
-            (sigmoid): Sigmoid
-        (relu): ReLU
-    (5): Conv2d, Params: 0.00M
+(patch_layer): Linear, Params: 0.000020M
+(predict_linear_pre): Linear, Params: 0.000812M
+(out_layer_dim): Linear, Params: 0.073824M
+(output_layer_time): Linear, Params: 0.000116M
+(MmHFF): MmHFF
+    (inConv2d_list): ModuleList
+        (0): Conv2d, Params: 0.001216M
+        (1): Conv2d, Params: 0.001216M
+    (outConv2d_list): ModuleList
+        (0): Conv2d, Params: 0.001154M
+        (1): Conv2d, Params: 0.001154M
+    (MmFF_block_list): Sequential
+        (MmFF_block_0): MmFF_block
+            (Res_block_list): ModuleList
+                (0): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+                (1): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+        (MmFF_block_1): MmFF_block
+            (Res_block_list): ModuleList
+                (0): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+                (1): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+        (MmFF_block_2): MmFF_block
+            (Res_block_list): ModuleList
+                (0): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+                (1): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+        (MmFF_block_3): MmFF_block
+            (Res_block_list): ModuleList
+                (0): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
+                (1): Res_block
+                    (conv1): Conv2d, Params: 0.036928M
+                    (conv2): Conv2d, Params: 0.036928M
+                    (ca): ChannelAttention
+                        (avg_pool): AdaptiveAvgPool2d
+                        (max_pool): AdaptiveMaxPool2d
+                        (fc1): Conv2d, Params: 0.004096M
+                        (relu1): ReLU
+                        (fc2): Conv2d, Params: 0.004096M
+                        (sigmoid): Sigmoid
+                    (relu): ReLU
