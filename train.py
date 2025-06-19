@@ -20,7 +20,7 @@ from torchsummary import summary
 # ============= HYPER PARAMS(Pre-Defined) ==========#
 lr = 0.0001
 epochs = 500
-batch_size = 8 #256
+batch_size = 8  # 1024
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 best_loss = 100
@@ -106,7 +106,7 @@ def train(training_data_loader, validate_data_loader):
 
             # save all losses into a vector for one epoch
             epoch_train_loss.append(loss.item())
-            epoch_train_NMSE_loss.append(NMSE_loss.item())
+            # epoch_train_NMSE_loss.append(NMSE_loss.item())
             # epoch_train_CLIP_loss.append(CLIP_loss.item())
 
             loss.backward()
@@ -116,7 +116,7 @@ def train(training_data_loader, validate_data_loader):
 
         # compute the mean value of all losses, as one epoch loss
         t_loss = np.nanmean(np.array(epoch_train_loss))
-        t_NMSE_loss = np.nanmean(np.array(epoch_train_NMSE_loss))
+        # t_NMSE_loss = np.nanmean(np.array(epoch_train_NMSE_loss))
         # t_CLIP_loss = np.nanmean(np.array(epoch_train_CLIP_loss))
 
         # print('Epoch: {}/{} training loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(epoch+1, epochs, t_loss, t_NMSE_loss, t_CLIP_loss))  # print loss for each epoch
@@ -128,7 +128,7 @@ def train(training_data_loader, validate_data_loader):
         writer.add_scalars('training loss',
                            {
                                'EPOCH': t_loss,
-                               'NMSE': t_NMSE_loss,
+                               # 'NMSE': t_NMSE_loss,
                                # 'CLIP': t_CLIP_loss
                             },
                             epoch)
@@ -151,12 +151,12 @@ def train(training_data_loader, validate_data_loader):
 
                 # save all losses into a vector for one epoch
                 epoch_val_loss.append(loss.item())
-                epoch_val_NMSE_loss.append(NMSE_loss.item())
+                # epoch_val_NMSE_loss.append(NMSE_loss.item())
                 # epoch_val_CLIP_loss.append(CLIP_loss.item())
 
             # compute the mean value of all losses, as one epoch loss
             v_loss = np.nanmean(np.array(epoch_val_loss))
-            v_NMSE_loss = np.nanmean(np.array(epoch_val_NMSE_loss))
+            # v_NMSE_loss = np.nanmean(np.array(epoch_val_NMSE_loss))
             # v_CLIP_loss = np.nanmean(np.array(epoch_val_CLIP_loss))
 
             # print('validate loss: {:.7f},NMSE: {:.7f},CLIP: {:.7f}'.format(v_loss, v_NMSE_loss, v_CLIP_loss))
@@ -169,7 +169,7 @@ def train(training_data_loader, validate_data_loader):
             writer.add_scalars('validate loss',
                             {
                                 'VALIDATE': v_loss,
-                                'NMSE': v_NMSE_loss,
+                                # 'NMSE': v_NMSE_loss,
                                 # 'CLIP': v_CLIP_loss
                             },
                             epoch)
