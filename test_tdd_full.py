@@ -118,7 +118,7 @@ if __name__ == "__main__":
                             ground_truth.append(pred.cpu().detach().numpy())
                             model_outputs.append(out.cpu().detach().numpy())
                     savemat(filename, {'ground_truth':np.array(ground_truth),'model_output':np.array(model_outputs)})
-                    print("speed", (speed+1)*10, ":  NMSE:", np.nanmean(np.array(test_loss_stack)))
+                    print("speed:", (speed + 1) * 10, "snr:", snr, ": NMSE:", np.nanmean(np.array(test_loss_stack)))
                     NMSE[i].append(np.nanmean(np.array(test_loss_stack)))
                 elif model_test_enable[i] in ['pad', 'pvec']:
                     cycle_times = lens
