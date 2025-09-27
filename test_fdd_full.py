@@ -19,6 +19,8 @@ from PAD import PAD3
 from scipy.io import savemat
 import os
 
+from fvcore.nn import FlopCountAnalysis, parameter_count_table
+
 if __name__ == "__main__":
     # demo
     device = torch.device('cuda:0')
@@ -26,7 +28,8 @@ if __name__ == "__main__":
     prev_path = "./Testing Dataset/H_U_his_test.mat"
     pred_path = "./Testing Dataset/H_U_pre_test.mat"
     pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
-    date_ = '20250507_17_42'
+    date_ = '20250617_20_03'
+    flops_time_analyze = False
     model_path = {
         'clip': 'Weights/full_shot_fdd/{}/clip.pth'.format(date_),
         'gpt': './Weights/full_shot_fdd/U2D_LLM4CP.pth',
@@ -76,7 +79,7 @@ if __name__ == "__main__":
                         model.eval()
                     prev_data = LoadBatch_ofdm_2(test_data_prev)
                     pred_data = LoadBatch_ofdm_2(test_data_pred)
-                    bs = 64
+                    bs = 1 if flops_time_analyze else 64
                     cycle_times = lens // bs
                     pth = 'code_testing/csi_output/{}'.format(date_)
                     try:
@@ -107,7 +110,27 @@ if __name__ == "__main__":
                             elif model_test_enable[i] == 'np':
                                 out = prev[:, [-1], :].repeat([1, pred_len, 1])
                             elif model_test_enable[i] == 'clip':
-                                out = model(prev, None, None, None)
+                                '''
+                                计算Flops和推理时间：
+                                    使用fvcore.nn.FlopCountAnalysis
+                                    需要更改models/GPT4CP.py,将model的forward()改为只接受一个参数,即out = model(prev)
+                                    需要更改bs = 1
+                                    flops.total()可能需要除以16
+                                '''
+                                if flops_time_analyze:
+                                    print(prev.shape)
+                                    flops = FlopCountAnalysis(model, torch.randn(16, 16, 96).to(device))
+                                    print(flops)
+                                    print("FLOPs(G): ", flops.total()/1e9)
+                                    time_1 = time.time_ns()
+                                # out = model(prev, None, None, None)
+                                out = model(prev)
+                                if flops_time_analyze:
+                                    infer_time = time.time_ns() - time_1
+                                    print(out.shape)
+                                    print(f"infer time:{infer_time/1e6:.2f} ms.")
+                                    assert 0==1
+
                             loss = criterion(out, pred)
                             test_loss_stack.append(loss.item())
                             ground_truth.append(pred.cpu().detach().numpy())

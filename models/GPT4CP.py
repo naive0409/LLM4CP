@@ -223,25 +223,18 @@ class Model(nn.Module):
             ln:true,layer norm
             mlp:false
             att:false
-            
         clip:
             logit_scale:true
-            
             text_model.embeddings.token_embedding:false
             text_model.embeddings.position_embedding:true
-            
             text_model.final_layer_norm.weight:true
-            
             vision_model.embeddings.patch_embedding:false
             vision_model.embeddings.position_embedding:true
             vision_model.embeddings.class_embedding(198):true
-            
             vision_model.pre_layrnorm:true
             vision_model.post_layernorm(395):true
-            
             visual_projection(-2):true
             text_projection:true
-            
             layer-norm:true
             mlp:false
             self_attn:false
@@ -342,10 +335,16 @@ class Model(nn.Module):
 
         self.MmHFF = MmHFF(res_dim=res_dim, modality_num=2, fusion_flag_list=[False, True, False, True])
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+    def forward(self, x_enc):
+    # def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+        '''
+        使用fvcore.nn.FlopCountAnalysis计算FLOPs
+        需要将model的forward()改为只接受一个参数
+        '''
 
         # x_enc = x_enc.permute(0, 2, 1)
         # timellm里的顺序是batch_size\Time Steps\number of features，这里先调换过来
+        x_mark_enc = None
 
         # x_enc = self.normalize_layers(x_enc, 'norm')
         # '''
