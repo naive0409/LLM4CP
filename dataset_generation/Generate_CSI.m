@@ -24,14 +24,17 @@ UEAntArray = qd_arrayant.generate('3gpp-mmw',1,1,...
     Vspc_Tx_BS/s.wavelength,Mg_BS,Ng_BS,...
     Vspc_Tx_BS/s.wavelength*M_BS,Hspc_Tx_BS/s.wavelength*N_BS);
 
-Speed=10.1:0.1:100; %[km/h]
-H_U_his = zeros(900,10,16,48,4,4,2);
-H_U_pre = zeros(900,10,4,48,4,4,2);
-H_D_pre = zeros(900,10,4,48,4,4,2);
+UENum = 10;
+Speed=10:1:100; %[km/h]
+H_U_his = zeros(length(Speed),UENum,16,48,4,4,2);
+H_U_pre = zeros(length(Speed),UENum,4,48,4,4,2);
+H_D_pre = zeros(length(Speed),UENum,4,48,4,4,2);
+AoA = zeros(length(Speed),UENum,25);
+
 for iter_Speed=1:length(Speed)
     disp(iter_Speed)
 
-    UENum = 10;
+
     UESpeed = Speed(iter_Speed); %[km/h]
     Timelength = 19*0.5e-3; %Sample Period Length,[s]
     UETrackLength = UESpeed/3.6*Timelength; %Calculate UE motion path length
@@ -91,4 +94,15 @@ for iter_Speed=1:length(Speed)
         H_U_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,1:48,:,:,:); % future uplink CSI
         H_D_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,49:96,:,:,:); % future downlink CSI
     end
+    AoA(iter_Speed,:,:) = BS2UE_builder.AoA;
 end
+
+save('H_U_his.mat','H_U_his');
+save('H_U_pre.mat','H_U_pre');
+save('H_D_pre.mat','H_D_pre');
+save('AoA.mat','AoA');
+
+% mu = mean(H_U_his, 4);
+% sigma = std(H_U_his, 0, 4);
+% H_U_his_norm = (H_U_his - mu) ./ sigma;
+% histogram(real(H_U_his_norm))
