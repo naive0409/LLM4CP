@@ -3,6 +3,7 @@ import hdf5storage
 from sklearn.feature_selection import mutual_info_regression
 import pickle
 
+
 def preprocess_to_2d(data, feature_dim):
     """
     将高维张量转换为 (N, D) 矩阵。
@@ -27,7 +28,7 @@ def preprocess_to_2d(data, feature_dim):
     return res
 
 
-def calculate_mi_metrics_multidim(x_raw, y_raw, x_feat=48, y_feat=25):
+def calculate_nmi(x_raw, y_raw, x_feat=48, y_feat=25):
     """
     专门处理多维异构数据的 NMI 计算
     x_raw: (..., 48, ...)
@@ -52,7 +53,7 @@ def calculate_mi_metrics_multidim(x_raw, y_raw, x_feat=48, y_feat=25):
     # 为了提速，如果特征维度太多（如48），可以间隔采样或只算部分维度
     for i in range(Y_s.shape[1]):
         # X 是多维特征 (N, 48), Y_s[:, i] 是单维目标 (N, 1)
-        mi_single = mutual_info_regression(X_s, Y_s[:, i], random_state=42)[0]
+        mi_single = mutual_info_regression(X_s, Y_s[:, i].T, random_state=42)[0]
         mi_list.append(mi_single)
 
     mi_avg = np.mean(mi_list)
@@ -60,11 +61,11 @@ def calculate_mi_metrics_multidim(x_raw, y_raw, x_feat=48, y_feat=25):
     # 3. 计算自信息（归一化基准）
     # 计算 I(X; X) 的代理值
     h_x = np.mean([mutual_info_regression(X_s, X_s[:, j], random_state=42)[0]
-                   for j in np.random.choice(X_s.shape[1], 5)])
+                   for j in np.random.choice(X_s.shape[1], 15)])
 
     # 计算 I(Y; Y) 的代理值
     h_y = np.mean([mutual_info_regression(Y_s, Y_s[:, j], random_state=42)[0]
-                   for j in np.random.choice(Y_s.shape[1], 5)])
+                   for j in np.random.choice(Y_s.shape[1], 15)])
 
     # 4. 得到归一化互信息 NMI
     ret_nmi = mi_avg / (np.sqrt(h_x * h_y) + 1e-9)
@@ -80,7 +81,7 @@ def calculate_mi_metrics_multidim(x_raw, y_raw, x_feat=48, y_feat=25):
 # 假设 aoa 形状 (ue, speed, 25)
 # nmi = calculate_mi_metrics_multidim(csi, aoa, x_feat=48, y_feat=25)
 
-def calculate_mi_metrics(x, y):
+def calculate_mi(x, y):
     """
     计算互信息 (MI)
     """
@@ -116,7 +117,7 @@ v_idx = 0  # slice(None) # magic_number:98
 UE_idx = 0  # slice(None)
 
 # 速度，历史信道探测次数，子载波数，天线数（垂直），天线数（水平），极化方向
-f_UL = raw_prev_freq[UE_idx, v_idx, -4:]   # (4, 48, 4, 4, 2)
+f_UL = raw_prev_freq[UE_idx, v_idx, -4:]  # (4, 48, 4, 4, 2)
 f_DL = raw_pred_freq[UE_idx, v_idx]
 print("f_UL shape", f_UL.shape)
 print("f_DL shape", f_DL.shape)
@@ -133,7 +134,6 @@ print("\n" + "=" * 65)
 print(f"{'Domain / Metric':<30} | {'MI (nats)':<10}")
 print("-" * 65)
 
-
 # 遍历
 # mi_matrix = np.zeros((f_UL.shape[0], f_UL.shape[1]))
 # for speed in range(f_UL.shape[1]):
@@ -141,48 +141,48 @@ print("-" * 65)
 #         mi = calculate_mi_metrics(f_UL[ue, speed], tau_UL[ue, speed])
 #         mi_matrix[ue, speed] = mi
 
-print("-" * 65)
 
 # for ue in range(f_UL.shape[0]):
 #     mi = calculate_mi_metrics(f_UL[ue, 4], f_DL[ue, 4])
 #     print(f"{'Freq: UL vs Freq: DL(UE {})'.format(ue):<30} | {mi:<10.4f}")
 # print("-" * 65)
 
-print("test")
+# print("test")
 # mi = calculate_mi_metrics(f_UL, f_UL)
 # print(f"{'test: UL':<30} | {mi:<10.4f}")
 #
 # mi = calculate_mi_metrics(tau_UL, tau_UL)
 # print(f"{'test: UL':<30} | {mi:<10.4f}")
+# print("-" * 65)
 
-print("-" * 65)
-print("跨链路")
-mi = calculate_mi_metrics(f_UL, f_DL)
-print(f"{'Freq: UL vs Freq: DL':<30} | {mi:<10.4f}")
-
-mi = calculate_mi_metrics(tau_UL, tau_DL)
-print(f"{'time: UL vs time: DL':<30} | {mi:<10.4f}")
-
-print("-" * 65)
 print("跨模态")
 # mi = calculate_mi_metrics(f_UL, tau_UL)
 # print(f"{'Freq: UL vs time: UL':<30} | {mi:<10.4f}")
 
-nmi = calculate_mi_metrics_multidim(f_UL, aoa, x_feat=48, y_feat=25)
-print(f"{'NMI Freq: UL vs AoA: UL)':<30} | {nmi:<10.4f}")
+nmi = calculate_nmi(f_UL, aoa, x_feat=48, y_feat=25)
+print(f"{'NMI Freq: UL vs AoA: UL':<30} | {nmi:<10.4f}")
 
-nmi = calculate_mi_metrics_multidim(f_UL, tau_UL, x_feat=48, y_feat=48)
+nmi = calculate_nmi(f_UL, tau_UL, x_feat=48, y_feat=48)
 print(f"{'NMI Freq: UL vs time: UL':<30} | {nmi:<10.4f}")
 
-nmi = calculate_mi_metrics_multidim(tau_UL, aoa, x_feat=48, y_feat=25)
+nmi = calculate_nmi(tau_UL, aoa, x_feat=48, y_feat=25)
 print(f"{'NMI time: UL vs AoA: UL':<30} | {nmi:<10.4f}")
 
-print("-" * 65)
-print("freq内部")
-# --- 4. 空间维度 (Spatial) ---
-for ant in range(4):
-    mi = calculate_mi_metrics(f_UL[:, :, 0, 0], f_UL[:, :, 0, ant])
-    print(f"{f'Spatial (Antenna {ant})':<30} | {mi:<10.4f}")
+# print("-" * 65)
+#
+# print("跨链路")
+# mi = calculate_nmi(f_UL, f_DL, x_feat=48, y_feat=48)
+# print(f"{'Freq: UL vs Freq: DL':<30} | {mi:<10.4f}")
+#
+# mi = calculate_nmi(tau_UL, tau_DL, x_feat=48, y_feat=48)
+# print(f"{'time: UL vs time: DL':<30} | {mi:<10.4f}")
+# print("-" * 65)
+
+# print("freq内部")
+# # --- 4. 空间维度 (Spatial) ---
+# for ant in range(4):
+#     mi = calculate_mi(f_UL[:, :, 0, 0], f_UL[:, :, 0, ant])
+#     print(f"{f'Spatial (Antenna {ant})':<30} | {mi:<10.4f}")
 
 # s1 = f_UL[:, :, 0, 0]
 # s2 = f_UL[:, :, 0, 1]
@@ -209,4 +209,3 @@ for ant in range(4):
 # print(f"{'Temporal (Time)':<30} | {mi_t:<10.4f}")
 
 print("=" * 65)
-
