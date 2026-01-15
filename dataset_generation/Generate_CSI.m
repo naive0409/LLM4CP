@@ -1,22 +1,30 @@
 % Author: Boxun Liu
 % Demo CSI generation code
 clc;clear;close all;
+% xxxxxxxx|1             48|49            96|xxxxxxxxxxx
+%         ^2.4G            ^2.4G+8.64M      ^2.4G+17.28M
+
+% |1             48|49xxxxGAPxxxxx96|97             144|
+%                          ^2.4G+8.64M
+% ^2.4G+8.64M-8.64M-8.64/2M
+
 s = qd_simulation_parameters;
-s.center_frequency = 2.4e9; %center frequency
+fc = 2.39568e9; % 2.4G+8.64M-8.64M-8.64/2M
+s.center_frequency = fc; %center frequency
 %% Base station antenna configuration
-M_BS = 4; 
-N_BS = 4; 
+M_BS = 4;
+N_BS = 4;
 Mg_BS = 1; % Number of nested panels in a column
 Ng_BS = 1; % Number of nested panels in a row
-ElcTltAgl_BS = 7; 
+ElcTltAgl_BS = 7;
 Hspc_Tx_BS = 0.5*s.wavelength; % Horizontal array element spacing
 Vspc_Tx_BS = 0.5*s.wavelength; % Vertical array element spacing
 
 BSAntArray = qd_arrayant.generate('3gpp-mmw',M_BS,N_BS,...
     s.center_frequency,2,ElcTltAgl_BS,...
     Vspc_Tx_BS/s.wavelength,Mg_BS,Ng_BS,...
-    Vspc_Tx_BS/s.wavelength*M_BS,Hspc_Tx_BS/s.wavelength*N_BS); 
-     
+    Vspc_Tx_BS/s.wavelength*M_BS,Hspc_Tx_BS/s.wavelength*N_BS);
+
 %% UE antenna configuration
 
 UEAntArray = qd_arrayant.generate('3gpp-mmw',1,1,...
@@ -43,7 +51,7 @@ for iter_Speed=1:length(Speed)
     SnapNum = 1+floor(Timelength/TimeInterval);
     %% Configure BS-UE channel parameters
     s1 = qd_simulation_parameters;
-    s1.center_frequency = 2.4e9;
+    s1.center_frequency = fc;
     s1.set_speed(UESpeed,TimeInterval);
     s1.use_random_initial_phase = true;
     s1.use_3GPP_baseline = 1;
@@ -64,8 +72,8 @@ for iter_Speed=1:length(Speed)
         UElocation(:,ind_UE) = [-rho_n*cosd(phi_n);rho_n*sind(phi_n);0]+UEcenter;
         d(ind_UE) = norm(UElocation(:,ind_UE)-BSlocation);
     end
-    
- 
+
+
     %UE track
     for ind_UE = 1:UENum
         UEtrack(1,ind_UE) = qd_track.generate('linear',UETrackLength);
@@ -87,22 +95,15 @@ for iter_Speed=1:length(Speed)
 
     [BS2UE_channel,BS2UE_builder] = l1.get_channels();
     for ii=1:UENum
-        h=BS2UE_channel(ii).fr(17280e3,96);  % OFDM channel generation
-        h=reshape(h,2,4,4,96,20);
+        % h=BS2UE_channel(ii).fr(17280e3,96);  % OFDM channel generation
+        h=BS2UE_channel(ii).fr(1.5*17280e3,144);  % OFDM channel generation
+        % h=reshape(h,2,4,4,96,20);
+        h=reshape(h,2,4,4,144,20);
         h=permute(h,[5,4,3,2,1]);
         H_U_his(iter_Speed,ii,:,:,:,:,:)=h(1:16,1:48,:,:,:);  % historical uplink CSI
-        H_U_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,1:48,:,:,:); % future uplink CSI
-        H_D_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,49:96,:,:,:); % future downlink CSI
+        % H_U_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,1:48,:,:,:); % future uplink CSI
+        % H_D_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,49:96,:,:,:); % future downlink CSI
+        H_D_pre(iter_Speed,ii,:,:,:,:,:)=h(17:20,96+1:96+48,:,:,:); % future downlink CSI
     end
-    AoA(iter_Speed,:,:) = BS2UE_builder.AoA;
 end
 
-save('H_U_his.mat','H_U_his');
-save('H_U_pre.mat','H_U_pre');
-save('H_D_pre.mat','H_D_pre');
-save('AoA.mat','AoA');
-
-% mu = mean(H_U_his, 4);
-% sigma = std(H_U_his, 0, 4);
-% H_U_his_norm = (H_U_his - mu) ./ sigma;
-% histogram(real(H_U_his_norm))
