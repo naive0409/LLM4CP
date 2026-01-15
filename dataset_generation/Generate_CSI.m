@@ -107,3 +107,7 @@ for iter_Speed=1:length(Speed)
     end
 end
 
+H_D_pre_train = permute(H_D_pre,[2,1,3,4,5,6,7]);
+H_U_his_train = permute(H_U_his,[2,1,3,4,5,6,7]);
+save('H_U_his_train.mat','H_U_his_train');
+save('H_D_pre_train.mat','H_D_pre_train');
