@@ -33,7 +33,7 @@ UEAntArray = qd_arrayant.generate('3gpp-mmw',1,1,...
     Vspc_Tx_BS/s.wavelength*M_BS,Hspc_Tx_BS/s.wavelength*N_BS);
 
 UENum = 10;
-Speed=10:1:100; %[km/h]
+Speed=10:0.1:100; %[km/h]
 H_U_his = zeros(length(Speed),UENum,16,48,4,4,2);
 H_U_pre = zeros(length(Speed),UENum,4,48,4,4,2);
 H_D_pre = zeros(length(Speed),UENum,4,48,4,4,2);
