@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from transformers import CLIPTokenizer
+from transformers import GPT2Config
 from transformers.models.gpt2.modeling_gpt2 import GPT2Model
 from transformers import CLIPModel, CLIPVisionModel, CLIPTextModel
 from einops import rearrange
@@ -150,11 +151,12 @@ class MmHFF(nn.Module):
 
 
 class Model(nn.Module):
-    model_list = ["gpt2", "clip", "clip_vision", "clip_text"]
+    model_list = ["gpt2", "clip", "clip_vision", "clip_text", "gpt2_scratch"]
 
     # def __init__(self, gpt_type=model_list[3], d_ff=512, d_model=512, gpt_layers=6,  # done clip text
     # def __init__(self, gpt_type=model_list[2], d_ff=768, d_model=768, gpt_layers=6,  # done clip vision
     def __init__(self, gpt_type=model_list[0], d_ff=768, d_model=768, gpt_layers=6,  # done gpt2
+    # def __init__(self, gpt_type=model_list[4], d_ff=768, d_model=768, gpt_layers=6,  # done scratch_gpt2
                  pred_len=4, prev_len=16, mlp=0, res_layers=4,
                  K=48, UQh=4, UQv=1, BQh=2, BQv=1,
                  patch_size=4, stride=2, res_dim=64,
@@ -211,6 +213,24 @@ class Model(nn.Module):
             self.gpt2 = CLIPTextModel.from_pretrained("./models/openai-clip-vit-base-patch32")
             self.tokenizer = CLIPTokenizer.from_pretrained("./models/openai-clip-vit-base-patch32")
 
+        elif gpt_type == 'gpt2_scratch':
+            print('Model: GPT-2 (Train from Scratch) - Baseline for Ablation Study')
+            # 使用配置手动构建模型，不加载预训练权重
+            # 参数设置与 GPT-2 Small (124M) 保持一致，保证 Model Capacity 相同
+            config = GPT2Config(
+                vocab_size=50257,
+                n_positions=1024,
+                n_ctx=1024,
+                n_embd=768,
+                n_layer=12,
+                n_head=12,
+                output_attentions=True,
+                output_hidden_states=True
+            )
+            self.gpt2 = GPT2Model(config) # 这里是随机初始化的
+            # 如果依然想支持层数裁剪，可以保留下面这行，但通常 baseline 建议跑全层
+            self.gpt2.h = self.gpt2.h[:gpt_layers]
+            self.gpt_dim = 768
         else:
             self.gpt2 = GPT2Model.from_pretrained('./models/gpt2', output_attentions=True, output_hidden_states=True)
             self.gpt2.h = self.gpt2.h[:gpt_layers]
@@ -249,6 +269,11 @@ class Model(nn.Module):
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
+        elif gpt_type == 'gpt2_scratch':
+            print('Model:gpt2_scratch (All params trainable)')
+            # 对于从头训练的模型，所有参数必须可训练，否则就是随机噪声
+            for param in self.gpt2.parameters():
+                param.requires_grad = True
         elif gpt_type == 'clip' or gpt_type == 'clip_vision' or gpt_type == 'clip_text':
             print('Model:clip')
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
@@ -451,7 +476,7 @@ class Model(nn.Module):
         # dec_out = self.gpt2(input_ids=clip_enc_out)  # done clip text
         # dec_out = self.gpt2(input_ids=enc_out)  # done clip text
         # dec_out = self.gpt2(pixel_values=enc_out)  # done clip vision
-        dec_out = self.gpt2(inputs_embeds=enc_out)#.last_hidden_state  # done gpt2 [B , L, 768]
+        dec_out = self.gpt2(inputs_embeds=enc_out)#.last_hidden_state  # done gpt2 done scratch_gpt2 [B , L, 768]
         # clip_loss = dec_out.loss
 
         # todo clip输出处理
