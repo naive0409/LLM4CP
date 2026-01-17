@@ -20,27 +20,54 @@ from scipy.io import savemat
 import os
 
 from fvcore.nn import FlopCountAnalysis, parameter_count_table
+import torch.nn as nn
+
+class KGNet(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(KGNet, self).__init__()
+        self.network = nn.Sequential(
+            nn.Linear(input_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_size),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+
 
 if __name__ == "__main__":
     # demo
     device = torch.device('cuda:0')
+    deepmimo = False
     is_U2D = 1
-    prev_path = "./Testing Dataset/H_U_his_test.mat"
-    pred_path = "./Testing Dataset/H_U_pre_test.mat"
-    pred_path_fdd = "./Testing Dataset/H_D_pre_test.mat"
-    date_ = '20250617_20_03'
+    prev_path = "/mnt/DataDrive164/wr/LLM4CP/Testing Dataset/H_U_his_test.mat"
+    pred_path = "/mnt/DataDrive164/wr/LLM4CP/Testing Dataset/H_U_pre_test.mat"
+    pred_path_fdd = "/mnt/DataDrive164/wr/LLM4CP/Testing Dataset/H_D_pre_test.mat"
+    if deepmimo:
+        prev_path = "/mnt/DataDrive164/wr/LLM4CP/Testing Dataset/H_ul_pre_test.mat"
+        pred_path_fdd = "/mnt/DataDrive164/wr/LLM4CP/Testing Dataset/H_dl_pre_test.mat"
+    date_ = '20260104_11_46'
     flops_time_analyze = False
     model_path = {
-        'clip': 'Weights/full_shot_fdd/{}/clip.pth'.format(date_),
+        'himff': '/mnt/DataDrive164/wr/LLM4CP/Weights/full_shot_fdd/{}/clip.pth'.format(date_),
         'gpt': './Weights/full_shot_fdd/U2D_LLM4CP.pth',
-        'transformer': './Weights/full_shot_fdd/U2D_trans.pth',
+        'transformer': '/home/ubuntu/users/wr/dev/Transformer+KGNET/Weights/Transformer/FDD_backup/U2D_Transformer.pth',
         'cnn': './Weights/full_shot_fdd/U2D_cnn.pth',
         'gru': './Weights/full_shot_fdd/U2D_gru.pth',
         'lstm': './Weights/full_shot_fdd/U2D_lstm.pth',
-        'rnn': './Weights/full_shot_fdd/U2D_rnn.pth'
+        'rnn': './Weights/full_shot_fdd/U2D_rnn.pth',
+        'kgnet': '/home/ubuntu/users/wr/dev/Transformer+KGNET/Weights/KGNET_new/FDD/U2D_KGNET_varlr001.pth'
     }
-    # model_test_enable = ['gpt', 'transformer', 'cnn', 'gru', 'lstm', 'rnn', 'np']
-    model_test_enable = ['clip']
+    # model_test_enable = [ 'himff', 'gpt', 'transformer', 'cnn', 'gru', 'lstm', 'rnn', 'np']
+    model_test_enable = ['himff']
     prev_len = 16
     label_len = 12
     pred_len = 4
@@ -54,13 +81,23 @@ if __name__ == "__main__":
         test_data_pred_base = hdf5storage.loadmat(pred_path_fdd)['H_D_pre_test']
     else:
         test_data_pred_base = hdf5storage.loadmat(pred_path)['H_U_pre_test']
+    if deepmimo:
+        test_data_prev_base = rearrange(test_data_prev_base, 'a b c d e f g -> (a) (e) (f) (g) (b) (c) (d)')
+        test_data_pred_base = rearrange(test_data_pred_base, 'a b c d e f g -> (a) (e) (f) (g) (b) (c) (d)')
+        print(test_data_prev_base.shape)
+        print(test_data_pred_base.shape)
     for i in range(len(model_test_enable)):
         print("---------------------------------------------------------------")
         print("loading ", i + 1, "th model......", model_test_enable[i])
         if model_test_enable[i] not in ['pad', 'pvec', 'np']:
             model = torch.load(model_path[model_test_enable[i]], map_location=device).to(device)
-        for snr in [5 * x for x in range(6)]:  # 0,5,...,25
-            for speed in range(0, 1):
+            # for block in model.MmHFF.MmFF_block_list:
+            #     if hasattr(block, 'fusion_flag'): # 检查一下以防万一
+            #         block.fusion_flag = False
+            #         print(f"Modified fusion_flag for block: {block}, new flag: {block.fusion_flag}")
+        # for snr in [5 * x for x in range(6)]:  # 0,5,...,25
+        for snr in [20]:  # 0,5,...,25
+            for speed in range(0, 10):
                 test_loss_stack = []
                 test_loss_stack_se = []
                 test_loss_stack_se0 = []
@@ -74,7 +111,7 @@ if __name__ == "__main__":
                 test_data_prev = test_data_prev / std
                 test_data_pred = test_data_pred / std
                 lens, _, _, _ = test_data_prev.shape
-                if model_test_enable[i] in ['clip', 'gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np']:
+                if model_test_enable[i] in ['himff', 'gpt', 'transformer', 'rnn', 'lstm', 'gru', 'cnn', 'np', 'kgnet']:
                     if model_test_enable[i] != 'np':
                         model.eval()
                     prev_data = LoadBatch_ofdm_2(test_data_prev)
@@ -109,7 +146,7 @@ if __name__ == "__main__":
                                 out = model(prev)
                             elif model_test_enable[i] == 'np':
                                 out = prev[:, [-1], :].repeat([1, pred_len, 1])
-                            elif model_test_enable[i] == 'clip':
+                            elif model_test_enable[i] == 'himff':
                                 '''
                                 计算Flops和推理时间：
                                     使用fvcore.nn.FlopCountAnalysis
@@ -130,6 +167,9 @@ if __name__ == "__main__":
                                     print(out.shape)
                                     print(f"infer time:{infer_time/1e6:.2f} ms.")
                                     assert 0==1
+                            elif model_test_enable[i] == 'kgnet':
+                                out = model(prev)
+                                out = out[:, -4:, :]
 
                             loss = criterion(out, pred)
                             test_loss_stack.append(loss.item())
