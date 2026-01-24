@@ -4,9 +4,15 @@ import scipy.io as sio
 import numpy as np
 
 raw_dataset = tf.data.TFRecordDataset(
-    # ["tfrecords/dichasus-cf02.tfrecords", "tfrecords/dichasus-cf03.tfrecords", "tfrecords/dichasus-cf04.tfrecords",
-    #  "tfrecords/dichasus-cf05.tfrecords", "tfrecords/dichasus-cf06.tfrecords", "tfrecords/dichasus-cf07.tfrecords"]
-    ["./Training Dataset/DICHASUS/cf0x/dichasus-cf02.tfrecords"]
+    [
+        # _:02-04; 2:02-06, 3:02
+        "/mnt/DataDrive164/wr/DICHASUS/cf0x/dichasus-cf02.tfrecords",
+        "/mnt/DataDrive164/wr/DICHASUS/cf0x/dichasus-cf03.tfrecords",
+        "/mnt/DataDrive164/wr/DICHASUS/cf0x/dichasus-cf04.tfrecords",
+        # "/mnt/DataDrive164/wr/DICHASUS/cf0x/dichasus-cf05.tfrecords",
+        # "/mnt/DataDrive164/wr/DICHASUS/cf0x/dichasus-cf06.tfrecords",
+        # "/mnt/DataDrive164/wr/DICHASUS/cf0x/dichasus-cf07.tfrecords",
+     ]
 )
 
 feature_description = {
@@ -48,70 +54,93 @@ dataset = raw_dataset.map(record_parse_function, num_parallel_calls=tf.data.expe
 # Optional: Cache dataset in RAM for faster training
 dataset = dataset.cache()
 
-print('done')
+print('Cache dataset done')
 
 # 读取数据并转换为numpy数组
-all_cfo = []
-all_csi = []
-all_gt_interp_age_tachy = []
+# all_cfo = []
+csi_array = []
+# all_gt_interp_age_tachy = []
 all_pos_tachy = []
 all_snr = []
 all_time = []
 
 for cfo, csi, gt_interp_age_tachy, pos_tachy, snr, time in dataset:
     # all_cfo.append(cfo.numpy())
-    all_csi.append(csi.numpy())
+    csi_array.append(csi.numpy())
     # all_gt_interp_age_tachy.append(gt_interp_age_tachy.numpy())
-    # all_pos_tachy.append(pos_tachy.numpy())
-    # all_snr.append(snr.numpy())
-    # all_time.append(time.numpy())
+    all_pos_tachy.append(pos_tachy.numpy())
+    all_snr.append(snr.numpy())
+    all_time.append(time.numpy())
 
 # 转换为numpy数组
 # cfo_array = np.array(all_cfo)
-csi_array = np.array(all_csi)
+csi_array = np.array(csi_array)
 # gt_interp_age_tachy_array = np.array(all_gt_interp_age_tachy)
-# pos_tachy_array = np.array(all_pos_tachy)
-# snr_array = np.array(all_snr)
-# time_array = np.array(all_time)
+pos_tachy_array = np.array(all_pos_tachy)
+snr_array = np.array(all_snr)
+time_array = np.array(all_time)
 
-'''
-indices = np.concatenate([np.arange(down_start, down_end), np.arange(up_start, up_end)])
-csi_selected = csi_array[:, :, indices, :]
-'''
+print(f"csi_array形状: {csi_array.shape}")
+print(f"pos_tachy_array形状: {pos_tachy_array.shape}")
+print(f"snr_array形状: {snr_array.shape}")
+print(f"time_array形状: {time_array.shape}")
 
-start_idx = (1024 - 96) // 2  # 464
-end_idx = start_idx + 96      # 560
-csi_middle_96 = csi_array[:, :, start_idx:end_idx, :]  # [18602, 32, 96, 2]
+indices = np.concatenate([np.arange(513-48,513), np.arange(513,513+48)])
+csi_array = csi_array[:, :, indices, :]
 
 # 步骤2: 按20个一组分组，不足丢弃
 group_size = 20
-num_complete_groups = len(csi_middle_96) // group_size
-csi_trimmed = csi_middle_96[:num_complete_groups * group_size]  # [x*20, 32, 96, 2]
+num_complete_groups = len(csi_array) // group_size
+csi_array = csi_array[:num_complete_groups * group_size]  # [x*20, 32, 96, 2]
+pos_tachy_array = pos_tachy_array[:num_complete_groups * group_size,:]
+snr_array = snr_array[:num_complete_groups * group_size,:]
+time_array = time_array[:num_complete_groups * group_size]
 
 # 步骤3: 重塑为 [x, 20, 96, 32, 2]
-csi_reshaped = csi_trimmed.reshape(num_complete_groups, group_size, 32, 96, 2)
-csi_reshaped = np.transpose(csi_reshaped, (0, 1, 3, 2, 4))  # [x, 20, 96, 32, 2]
+csi_array = csi_array.reshape(num_complete_groups, group_size, 32, 96, 2)
+csi_array = np.transpose(csi_array, (0, 1, 3, 2, 4))  # [x, 20, 96, 32, 2]
+pos_tachy_array = pos_tachy_array.reshape(num_complete_groups, group_size, 3)
+snr_array = snr_array.reshape(num_complete_groups, group_size, 32)
+time_array = time_array.reshape(num_complete_groups, group_size)
+print(f"csi reshaped:{csi_array.shape}")  # [x, 20, 96, 32, 2]
+print(f"pos tachy reshaped:{pos_tachy_array.shape}")  # (930, 20, 3)
+print(f"snr reshaped:{snr_array.shape}")  # (930, 20, 32)
+print(f"time reshaped:{time_array.shape}")  # (930, 20)
+
 
 # 步骤4: 转换为复数矩阵
-csi_final = csi_reshaped[..., 0] + 1j * csi_reshaped[..., 1]  # [x, 20, 96, 32]
+csi_array = csi_array[..., 0] + 1j * csi_array[..., 1]  # [x, 20, 96, 32]
 
-print(f"最终csi_array形状: {csi_final.shape}")  # [x, 20, 96, 32]
+csi_ul = csi_array[:, :16, :48, :]
+csi_ul = csi_ul.reshape(num_complete_groups, 16, 48 * 32) # [x,16, subcarrier48*ant32]
+csi_dl = csi_array[:, -4:, -48:, :]
+csi_dl = csi_dl.reshape(num_complete_groups, 4, 48 * 32)  # [x,16, subcarrier48*ant32]
 
 # 保存为.mat文件
-mat_data = {
+H_U_his_train = {
     # 'cfo': cfo_array,
-    'csi': csi_array,
+    'H_U_his_train': csi_ul,
     # 'gt_interp_age_tachy': gt_interp_age_tachy_array,
-    # 'pos_tachy': pos_tachy_array,
-    # 'snr': snr_array,
-    # 'time': time_array
+    'pos_tachy': pos_tachy_array,
+    'snr': snr_array,
+    'time': time_array
 }
 
-sio.savemat('dichasus_data.mat', mat_data)
-print(f"成功保存数据到 dichasus_data.mat")
+H_D_pre_train = {
+    'H_D_pre_train': csi_dl,
+    'pos_tachy': pos_tachy_array,
+    'snr': snr_array,
+    'time': time_array
+}
+
+sio.savemat('H_U_his_train3.mat', H_U_his_train)
+print(f"成功保存数据到 H_U_his_train.mat")
+sio.savemat('H_D_pre_train3.mat', H_D_pre_train)
+print(f"成功保存数据到 H_D_pre_train.mat")
 print(f"数据形状:")
 # print(f"CFO: {cfo_array.shape}")
-print(f"CSI: {csi_array.shape}")
+print(f"UL: {csi_ul.shape}")  # (930, 16, 1536)
+print(f"DL: {csi_dl.shape}")  # (930, 4, 1536)
 # print(f"Position: {pos_tachy_array.shape}")
 
 pass
