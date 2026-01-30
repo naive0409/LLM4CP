@@ -71,9 +71,7 @@ def calculate_nmi(x_raw, y_raw, x_feat=48, y_feat=25):
     ret_nmi = mi_avg / (np.sqrt(h_x * h_y) + 1e-9)
     print(f"{mi_avg:.3g}, {h_x:.3g}, {h_y:.3g}")
 
-    return ret_nmi
-
-    return np.clip(ret_nmi, 0, 1)
+    return ret_nmi, mi_avg
 
 
 # --- 示例：如何针对你的数据调用 ---
@@ -99,10 +97,44 @@ def calculate_mi(x, y):
     return mi
 
 
+def preprocess_new_data(data_96d):
+    """
+    将96维（实部和虚部拼接）数据转换为48维复数格式
+    data_96d: shape (..., 96)
+    返回: shape (..., 48) 复数数组
+    """
+    shape = list(data_96d.shape)
+    shape[-1] = 48  # 最后一维从96变为48
+
+    # 拆分实部和虚部
+    real_part = data_96d[..., :48]
+    imag_part = data_96d[..., 48:]
+
+    # 组合成复数
+    data_complex = real_part + 1j * imag_part
+    return data_complex
+
+
 # --- 1. 数据加载 ---
 aoa = hdf5storage.loadmat("dataset_generation/AoA.mat")["AoA"]
 raw_prev_freq = hdf5storage.loadmat("dataset_generation/H_U_his.mat")["H_U_his"]
 raw_pred_freq = hdf5storage.loadmat("dataset_generation/H_D_pre.mat")["H_D_pre"]
+
+# 加载新数据（来自10_25dB.mat）
+new_data = hdf5storage.loadmat("dataset_generation/10_20dB.mat")
+ground_truth_96d = new_data["ground_truth"]  # (31, 1024, 4, 96)
+model_output_96d = new_data["model_output"]  # (31, 1024, 4, 96)
+prev_96d = new_data["prev"][:, :, -4:, :]
+
+print("ground_truth_96d shape:", ground_truth_96d.shape)
+print("model_output_96d shape:", model_output_96d.shape)
+
+# 将96维数据转换为48维复数格式
+ground_truth_48d = preprocess_new_data(ground_truth_96d)  # (31, 1024, 4, 48) complex
+model_output_48d = preprocess_new_data(model_output_96d)  # (31, 1024, 4, 48) complex
+prev_48d = preprocess_new_data(prev_96d)
+
+# (注意：后续会根据f_UL/f_DL的实际大小调整新数据的维度)
 
 # (保留你原始的 pickle 加载逻辑)
 # with open("Testing Dataset/H_U_his_test.pickle", "rb") as f:
@@ -130,82 +162,109 @@ tau_DL = np.fft.ifft(f_DL, axis=1)
 print("tau_UL shape", tau_UL.shape)
 print("tau_DL shape", tau_DL.shape)
 
+# --- 调整新数据维度，使其元素总数与f_UL/f_DL一致 ---
+target_size = f_UL.size  # 6144
+print(f"\nf_UL size: {f_UL.size}, f_DL size: {f_DL.size}")
+
+# f_UL/f_DL的shape: (4, 48, 4, 4, 2), 除了48维外其他维度的乘积 = 4 * 4 * 4 * 2 = 128
+# 新数据需要调整为 (..., 48)，其中其他维度乘积 = 128
+
+feat_dim = 48
+
+# 先将ground_truth_48d展平为 (total_samples, 48)
+shape_gt = list(ground_truth_48d.shape)
+feat_idx_gt = shape_gt.index(feat_dim)
+ground_truth_moved = np.moveaxis(ground_truth_48d, feat_idx_gt, -1)
+ground_truth_flat = ground_truth_moved.reshape(-1, feat_dim)
+
+# 同样处理model_output_48d
+shape_mo = list(model_output_48d.shape)
+feat_idx_mo = shape_mo.index(feat_dim)
+model_output_moved = np.moveaxis(model_output_48d, feat_idx_mo, -1)
+model_output_flat = model_output_moved.reshape(-1, feat_dim)
+
+shape_prev = list(prev_48d.shape)
+feat_idx_prev = shape_prev.index(feat_dim)
+prev_moved = np.moveaxis(prev_48d, feat_idx_prev, -1)
+prev_flat = prev_moved.reshape(-1, feat_dim)
+
+print(f"ground_truth_flat shape: {ground_truth_flat.shape}")
+print(f"model_output_flat shape: {model_output_flat.shape}")
+print(f"prev_flat shape:{prev_flat.shape}")
+
+# 计算需要的样本数
+target_samples = target_size // feat_dim  # 128
+
+# 生成一次随机索引，确保两个数据采样一致
+indices = np.random.choice(ground_truth_flat.shape[0], target_samples, replace=False)
+
+# 使用相同索引采样
+ground_truth_sampled = ground_truth_flat[indices]
+model_output_sampled = model_output_flat[indices]
+prev_sampled = prev_flat[indices]
+prev_tau_flat = np.fft.ifft(prev_flat, axis=-1)
+prev_tau_sampled = prev_tau_flat[indices]
+
+# reshape为 (4, 4, 8, 48) 以匹配类似f_UL/f_DL的结构
+# 4 * 4 * 8 = 128，符合要求
+ground_truth_48d = ground_truth_sampled.reshape(4, 4, 8, feat_dim)
+model_output_48d = model_output_sampled.reshape(4, 4, 8, feat_dim)
+prev_output_48d = prev_sampled.reshape(4, 4, 8, feat_dim)
+prev_tau_output_48d = prev_tau_sampled.reshape(4, 4, 8, feat_dim)
+
+
+print(f"ground_truth_48d shape: {ground_truth_48d.shape}, size: {ground_truth_48d.size}")
+print(f"model_output_48d shape: {model_output_48d.shape}, size: {model_output_48d.size}")
+print(f"prev_output_48d shape: {prev_output_48d.shape}, size: {prev_output_48d.size}")
+print(f"prev_tau_output_48d shape: {prev_tau_output_48d.shape}, size: {prev_tau_output_48d.size}")
+
 print("\n" + "=" * 65)
 print(f"{'Domain / Metric':<30} | {'MI (nats)':<10}")
 print("-" * 65)
 
-# 遍历
-# mi_matrix = np.zeros((f_UL.shape[0], f_UL.shape[1]))
-# for speed in range(f_UL.shape[1]):
-#     for ue in range(f_UL.shape[0]):
-#         mi = calculate_mi_metrics(f_UL[ue, speed], tau_UL[ue, speed])
-#         mi_matrix[ue, speed] = mi
-
-
-# for ue in range(f_UL.shape[0]):
-#     mi = calculate_mi_metrics(f_UL[ue, 4], f_DL[ue, 4])
-#     print(f"{'Freq: UL vs Freq: DL(UE {})'.format(ue):<30} | {mi:<10.4f}")
-# print("-" * 65)
-
-# print("test")
-# mi = calculate_mi_metrics(f_UL, f_UL)
-# print(f"{'test: UL':<30} | {mi:<10.4f}")
+# print("跨模态")
 #
-# mi = calculate_mi_metrics(tau_UL, tau_UL)
-# print(f"{'test: UL':<30} | {mi:<10.4f}")
-# print("-" * 65)
-
-print("跨模态")
-# mi = calculate_mi_metrics(f_UL, tau_UL)
-# print(f"{'Freq: UL vs time: UL':<30} | {mi:<10.4f}")
-
-nmi = calculate_nmi(f_UL, aoa, x_feat=48, y_feat=25)
-print(f"{'NMI Freq: UL vs AoA: UL':<30} | {nmi:<10.4f}")
-
-nmi = calculate_nmi(f_UL, tau_UL, x_feat=48, y_feat=48)
-print(f"{'NMI Freq: UL vs time: UL':<30} | {nmi:<10.4f}")
-
-nmi = calculate_nmi(tau_UL, aoa, x_feat=48, y_feat=25)
-print(f"{'NMI time: UL vs AoA: UL':<30} | {nmi:<10.4f}")
+# nmi, _ = calculate_nmi(f_UL, aoa, x_feat=48, y_feat=25)
+# print(f"{'NMI Freq: UL vs AoA: UL':<30} | {nmi:<10.4f}")
+#
+# nmi, _ = calculate_nmi(f_UL, tau_UL, x_feat=48, y_feat=48)
+# print(f"{'NMI Freq: UL vs time: UL':<30} | {nmi:<10.4f}")
+#
+# nmi, _ = calculate_nmi(tau_UL, aoa, x_feat=48, y_feat=25)
+# print(f"{'NMI time: UL vs AoA: UL':<30} | {nmi:<10.4f}")
 
 # print("-" * 65)
+
+mi_hat_gt = np.zeros(128)
+mi_prev_gt = np.zeros(128)
+mi_tau_gt = np.zeros(128)
+for index in range(128):
+    mi_hat_gt[index] = calculate_mi(ground_truth_flat[index, :], model_output_flat[index, :])
+    mi_prev_gt[index] = calculate_mi(prev_flat.reshape(-1, 48)[index], model_output_flat.reshape(-1, 48)[index, :])
+    mi_tau_gt[index] = calculate_mi(prev_tau_flat.reshape(-1, 48)[index], ground_truth_flat.reshape(-1, 48)[index, :])
+print(f"{np.mean(mi_hat_gt):<4f}")
+print(f"{np.mean(mi_prev_gt):<4f}")
+print(f"{np.mean(mi_tau_gt):<4f}")
+
 #
 # print("跨链路")
-# mi = calculate_nmi(f_UL, f_DL, x_feat=48, y_feat=48)
-# print(f"{'Freq: UL vs Freq: DL':<30} | {mi:<10.4f}")
-#
-# mi = calculate_nmi(tau_UL, tau_DL, x_feat=48, y_feat=48)
-# print(f"{'time: UL vs time: DL':<30} | {mi:<10.4f}")
-# print("-" * 65)
+_, mi = calculate_nmi(f_UL, ground_truth_48d, x_feat=48, y_feat=48)
+print(f"{'Freq: UL vs Freq: DL':<30} | {mi:<10.4f}")
 
-# print("freq内部")
-# # --- 4. 空间维度 (Spatial) ---
-# for ant in range(4):
-#     mi = calculate_mi(f_UL[:, :, 0, 0], f_UL[:, :, 0, ant])
-#     print(f"{f'Spatial (Antenna {ant})':<30} | {mi:<10.4f}")
+_, mi = calculate_nmi(tau_UL, ground_truth_48d, x_feat=48, y_feat=48)
+print(f"{'time: UL vs Freq: DL':<30} | {mi:<10.4f}")
 
-# s1 = f_UL[:, :, 0, 0]
-# s2 = f_UL[:, :, 0, 1]
-# mi_s = calculate_mi_metrics(s1, s2)
-# print(f"{'Spatial (Antenna)':<30} | {mi_s:<10.4f}")
-#
-# # --- 5. 频率维度 (Frequency) ---
-# f1 = f_UL[:, :, 0, 0, 0]
-# f2 = f_UL[:, :, 1, 0, 0]  # 相邻子载波
-# mi_f = calculate_mi_metrics(f1, f2)
-# print(f"{'Frequency (Subc)':<30} | {mi_f:<10.4f}")
-#
-# # --- 6. 时延域分析 (time Domain - 核心新增) ---
-# # 比较第 1 个时延分量（通常是强径）与第 5 个时延分量（多径）
-# d1 = tau_UL[:, :, 0, 0, 0]
-# d2 = tau_UL[:, :, 4, 0, 0]
-# mi_d = calculate_mi_metrics(d1, d2)
-# print(f"{'time (Tap 1 vs 5)':<30} | {mi_d:<10.4f}")
-#
-# # --- 7. 时间维度 (Temporal) ---
-# t1 = f_UL[-4, :, 0, 0]
-# t2 = f_UL[-1, :, 0, 0]
-# mi_t = calculate_mi_metrics(t1, t2)
-# print(f"{'Temporal (Time)':<30} | {mi_t:<10.4f}")
+_, mi = calculate_nmi(aoa, ground_truth_48d, x_feat=25, y_feat=48)
+print(f"{'AoA:  UL vs Freq: DL':<30} | {mi:<10.4f}")
 
-print("=" * 65)
+
+print("-" * 65)
+
+# --- 新数据的互信息计算 ---
+
+# 2.1 新数据自身之间的互信息
+print("新数据 (10_25dB.mat):")
+
+# Ground truth vs Model output（预测质量评估）
+_, mi = calculate_nmi(model_output_48d, ground_truth_48d, x_feat=48, y_feat=48)
+print(f"{'Ground truth vs Model output':<30} | {mi:<10.4f}")
