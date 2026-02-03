@@ -23,7 +23,7 @@ from fvcore.nn import FlopCountAnalysis, parameter_count_table
 import torch.nn as nn
 
 
-def load_dichasus_validation_data(file_path, is_U2D=1, train_per=0.9, valid_per=0.1):
+def load_dichasus_validation_data(file_path, is_U2D=1, train_per=0.8, valid_per=0.1):
     """
     加载dichasus数据集的验证集部分
     类似于data.py中的处理逻辑，但针对验证集（is_train=0）
@@ -93,8 +93,8 @@ def load_dichasus_validation_data(file_path, is_U2D=1, train_per=0.9, valid_per=
     # 6. 根据验证集划分提取数据 (is_train=0)
     start_idx = int(train_per * total_chunks)
     end_idx = int((train_per + valid_per) * total_chunks)
-    H_his = permuted_csi[start_idx:end_idx, :16, :48, ...]  # [n_valid, 16, k, a]
-    H_pre = permuted_csi[start_idx:end_idx, -4:, -48:, ...]  # [n_valid, 4, k, a]
+    H_his = permuted_csi[end_idx:, :16, :48, ...]  # [n_valid, 16, k, a]
+    H_pre = permuted_csi[end_idx:, -4:, -48:, ...]  # [n_valid, 4, k, a]
 
     # 合并 k 和 (a*real_imag) 维度
     H_his = rearrange(H_his, 'n L k a -> n L (k a)')
@@ -260,6 +260,7 @@ if __name__ == "__main__":
                     except:
                         pass
                     filename = pth + '/{}_{}dB.mat'.format((speed+1)*10, snr)
+                    prev_list = []
                     ground_truth = []
                     model_outputs = []
                     with torch.no_grad():
@@ -309,9 +310,13 @@ if __name__ == "__main__":
 
                             loss = criterion(out, pred)
                             test_loss_stack.append(loss.item())
+                            prev_list.append(prev.cpu().detach().numpy())
                             ground_truth.append(pred.cpu().detach().numpy())
                             model_outputs.append(out.cpu().detach().numpy())
-                    savemat(filename, {'ground_truth':np.array(ground_truth),'model_output':np.array(model_outputs)})
+                    savemat(filename, {'ground_truth':np.array(ground_truth),
+                                       'model_output':np.array(model_outputs),
+                                    #    'prev':np.array(prev_list)
+                                       })
                     print("speed:", (speed + 1) * 10, "snr:", snr, "\t: NMSE:", np.nanmean(np.array(test_loss_stack)))
                     NMSE[i].append(np.nanmean(np.array(test_loss_stack)))
 

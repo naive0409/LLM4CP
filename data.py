@@ -17,7 +17,7 @@ def noise(H, SNR):
 
 class Dataset_Pro(data.Dataset):
     def __init__(self, file_path_r, file_path_t, is_train=1, ir=1, SNR=15, is_U2D=0, is_few=0,
-                 train_per=0.9, valid_per=0.1,
+                 train_per=0.8, valid_per=0.1,
                  use_dichasus=False):
         super(Dataset_Pro, self).__init__()
         self.SNR = SNR
